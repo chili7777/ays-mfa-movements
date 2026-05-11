@@ -1,0 +1,8 @@
+services:
+  ays-mfa-movements:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    image: ghcr.io/chili7777/ays-mfa-movements:local
+    ports:
+      - "8083:80"

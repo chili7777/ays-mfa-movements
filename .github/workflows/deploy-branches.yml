@@ -1,0 +1,74 @@
+name: CI and DigitalOcean Deploy
+on:
+  push:
+    branches:
+      - "feature/**"
+      - "develop"
+      - "main"
+      - "master"
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/ays-mfa-movements
+  DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build Angular app
+        run: npm run build -- --configuration production
+      - name: Resolve environment
+        id: target
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == feature/* ]]; then
+            echo "environment=staging" >> "$GITHUB_OUTPUT"
+            echo "app_id=${{ secrets.DO_APP_ID_STAGING }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${GITHUB_REF_NAME}" == "develop" ]]; then
+            echo "environment=development" >> "$GITHUB_OUTPUT"
+            echo "app_id=${{ secrets.DO_APP_ID_DEVELOPMENT }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${GITHUB_REF_NAME}" == "main" || "${GITHUB_REF_NAME}" == "master" ]]; then
+            echo "environment=production" >> "$GITHUB_OUTPUT"
+            echo "app_id=${{ secrets.DO_APP_ID_PRODUCTION }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "environment=skip" >> "$GITHUB_OUTPUT"
+            echo "app_id=" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push image
+        if: steps.target.outputs.environment != 'skip'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.target.outputs.environment }}-${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:${{ steps.target.outputs.environment }}-latest
+      - name: Trigger DigitalOcean deployment
+        if: steps.target.outputs.app_id != '' && env.DIGITALOCEAN_ACCESS_TOKEN != ''
+        env:
+          DO_APP_ID: ${{ steps.target.outputs.app_id }}
+        run: |
+          curl --fail --show-error --silent \
+            -X POST "https://api.digitalocean.com/v2/apps/${DO_APP_ID}/deployments" \
+            -H "Authorization: Bearer ${DIGITALOCEAN_ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"force_build":true}'
+      - name: Print deployment target
+        run: echo "Environment=${{ steps.target.outputs.environment }} AppId=${{ steps.target.outputs.app_id }}"

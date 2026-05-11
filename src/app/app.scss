@@ -1,0 +1,17 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+}
+.app-shell {
+  min-height: 100dvh;
+  display: grid;
+  place-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+h1,
+p {
+  margin: 0;
+}

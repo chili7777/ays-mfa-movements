@@ -1,59 +1,66 @@
-# AysMfaAccount
-
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.10.
-
-## Development server
-
-To start a local development server, run:
-
+# ays-mfa-movements
+Angular micro-frontend for MFA movements features.
+The app renders:
+- `ays-mfa-movements`
+- `Micro-frontend loaded successfully.`
+It is containerized for deployment in DigitalOcean App Platform and served by Nginx on port `80` with SPA fallback to `index.html`.
+## Prerequisites
+- Node.js and npm
+- Docker
+- A GitHub account with access to GHCR (`ghcr.io`)
+## Install dependencies
 ```bash
-ng serve
+npm install
 ```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
+## Production build
 ```bash
-ng generate component component-name
+npm run build -- --configuration production
 ```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
+Build output is generated in `dist/ays-mfa-movements/browser`.
+## Docker build
 ```bash
-ng generate --help
+docker build -f deploy/Dockerfile -t ghcr.io/chili7777/ays-mfa-movements:staging-latest .
 ```
-
-## Building
-
-To build the project run:
-
+## Docker run local
 ```bash
-ng build
+docker run --rm -p 8083:80 ghcr.io/chili7777/ays-mfa-movements:staging-latest
 ```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
+Open `http://localhost:8083`.
+## Docker Compose run local
 ```bash
-ng test
+docker compose up --build
 ```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
+Stop the container:
 ```bash
-ng e2e
+docker compose down
 ```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## GHCR push
+```bash
+docker login ghcr.io
+docker push ghcr.io/chili7777/ays-mfa-movements:staging-latest
+```
+## DigitalOcean App Platform setup
+Create a new app using **Container Image**:
+1. Source type: `Container Image`
+2. Registry provider: `GitHub Container Registry`
+3. Repository: `chili7777/ays-mfa-movements`
+4. Tag: `staging-latest`
+5. HTTP Port: `80`
+6. Health check path: `/`
+After deploy, set this env var in the shell app:
+- `AYS_MFA_MOVEMENTS_URL=https://<your-ays-mfa-movements-domain>`
+Then redeploy the shell app.
+## GitHub Actions deployment workflow
+This repo includes `.github/workflows/deploy-branches.yml`.
+Push behavior:
+- `feature/**` -> `staging`
+- `develop` -> `development`
+- `main` or `master` -> `production`
+Required repository secrets:
+- `DIGITALOCEAN_ACCESS_TOKEN`
+- `DO_APP_ID_STAGING`
+- `DO_APP_ID_DEVELOPMENT`
+- `DO_APP_ID_PRODUCTION`
+## Project deployment files
+- `deploy/Dockerfile`: multi-stage build (Node build + Nginx runtime)
+- `deploy/nginx.conf`: SPA fallback (`try_files $uri $uri/ /index.html`)
