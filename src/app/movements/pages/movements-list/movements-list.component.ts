@@ -22,9 +22,14 @@ export class MovementsListComponent implements OnInit {
   accountId: string = '';
   fromDate: string = '';
   toDate: string = '';
+  isFilterVisible: boolean = false;
 
   ngOnInit(): void {
     this.loadMovements();
+  }
+
+  toggleFilters(): void {
+    this.isFilterVisible = !this.isFilterVisible;
   }
 
   loadMovements(): void {

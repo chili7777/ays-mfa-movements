@@ -146,6 +146,39 @@ h1, h2, h3, h4, h5, h6 {
   padding-right: 8px;
 }
 
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid $theme-dark-border;
+  transition: all 0.3s ease;
+
+  .material-icons {
+    position: absolute;
+    right: 0;
+    font-size: 18px;
+    color: $theme-dark-text-secondary;
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .form-control {
+    border-bottom: none !important;
+    padding-right: 30px;
+    &:focus {
+      padding-left: 0;
+    }
+  }
+
+  &:focus-within {
+    border-bottom-color: $theme-dark-accent;
+    .material-icons {
+      color: $theme-dark-accent;
+      opacity: 1;
+    }
+  }
+}
+
 select.form-control {
   cursor: pointer;
   appearance: none;
@@ -287,6 +320,7 @@ input:checked + .slider:before {
 
 @media (max-width: 767.98px) {
   .hide-mobile { display: none !important; }
+  .mobile-hidden { display: none !important; }
   .container { padding: 0; }
   .surface { border-radius: 0; }
 }

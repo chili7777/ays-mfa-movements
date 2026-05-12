@@ -1,19 +1,38 @@
 <div class="container">
+  <!-- Botón de filtrado para Mobile -->
+  <div class="show-mobile-only px-3 pt-4">
+    <button class="btn btn-secondary w-100 d-flex align-items-center justify-content-center gap-2"
+            (click)="toggleFilters()"
+            [class.btn-primary]="isFilterVisible">
+      <span class="material-icons">calendar_today</span>
+      <span>Filtrar por fechas</span>
+    </button>
+  </div>
+
   <!-- Filtros -->
-  <section class="filters-section py-4">
-    <div class="surface-alt p-3">
+  <section class="filters-section py-4" [class.mobile-hidden]="!isFilterVisible">
+    <div class="surface-alt p-3 mx-2 mx-md-0">
       <div class="row g-3">
         <div class="col-12 col-md-4">
           <label class="text-secondary small d-block mb-1">ID Cuenta</label>
-          <input type="text" class="form-control" [(ngModel)]="accountId" placeholder="Filtrar por cuenta...">
+          <div class="input-with-icon">
+            <input type="text" class="form-control" [(ngModel)]="accountId" placeholder="Filtrar por cuenta...">
+            <span class="material-icons">search</span>
+          </div>
         </div>
         <div class="col-6 col-md-3">
           <label class="text-secondary small d-block mb-1">Desde</label>
-          <input type="date" class="form-control" [(ngModel)]="fromDate">
+          <div class="input-with-icon">
+            <input type="date" class="form-control" [(ngModel)]="fromDate">
+            <span class="material-icons">event</span>
+          </div>
         </div>
         <div class="col-6 col-md-3">
           <label class="text-secondary small d-block mb-1">Hasta</label>
-          <input type="date" class="form-control" [(ngModel)]="toDate">
+          <div class="input-with-icon">
+            <input type="date" class="form-control" [(ngModel)]="toDate">
+            <span class="material-icons">event</span>
+          </div>
         </div>
         <div class="col-12 col-md-2 d-flex align-items-end gap-2">
           <button class="btn btn-primary w-100" (click)="onFilter()">Filtrar</button>
