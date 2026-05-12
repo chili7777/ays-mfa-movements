@@ -1,0 +1,95 @@
+<div class="container">
+  <!-- Filtros -->
+  <section class="filters-section py-4">
+    <div class="surface-alt p-3">
+      <div class="row g-3">
+        <div class="col-12 col-md-4">
+          <label class="text-secondary small d-block mb-1">ID Cuenta</label>
+          <input type="text" class="form-control" [(ngModel)]="accountId" placeholder="Filtrar por cuenta...">
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="text-secondary small d-block mb-1">Desde</label>
+          <input type="date" class="form-control" [(ngModel)]="fromDate">
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="text-secondary small d-block mb-1">Hasta</label>
+          <input type="date" class="form-control" [(ngModel)]="toDate">
+        </div>
+        <div class="col-12 col-md-2 d-flex align-items-end gap-2">
+          <button class="btn btn-primary w-100" (click)="onFilter()">Filtrar</button>
+          <button class="btn btn-secondary" (click)="clearFilters()" title="Limpiar">
+            <span class="material-icons">refresh</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="list-section">
+    <div class="d-flex justify-content-between align-items-center mb-4 px-2">
+      <h2 class="h5 mb-0">Movimientos</h2>
+      <button class="btn btn-success btn-sm" (click)="goToCreate()">
+        + Nuevo Movimiento
+      </button>
+    </div>
+
+    <!-- Mobile View -->
+    <div class="show-mobile-only">
+      <div class="px-3" *ngFor="let m of filteredMovements" (click)="goToDetail(m.id)">
+        <div class="py-3 d-flex justify-content-between align-items-center" style="border-bottom: 1px solid var(--border-color, rgba(43, 49, 57, 0.5));">
+          <div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="fw-bold" [ngClass]="m.movementType === 'DEPOSIT' ? 'text-success' : 'text-danger'">
+                {{m.movementType === 'DEPOSIT' ? '+' : '-'}} {{m.amount | currency}}
+              </span>
+            </div>
+            <div class="text-secondary small">{{m.movementDate | date:'short'}} | Cuenta: {{m.accountId}}</div>
+          </div>
+          <span class="text-secondary">›</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop View -->
+    <div class="hide-mobile">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Cuenta</th>
+            <th>Tipo</th>
+            <th>Monto</th>
+            <th>Saldo</th>
+            <th style="text-align: right;">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let m of filteredMovements">
+            <td>{{m.movementDate | date:'medium'}}</td>
+            <td>{{m.accountId}}</td>
+            <td>
+              <span class="status-badge" [ngClass]="m.movementType === 'DEPOSIT' ? 'status-active' : 'status-inactive'">
+                {{getTypeLabel(m.movementType)}}
+              </span>
+            </td>
+            <td class="fw-bold" [ngClass]="m.movementType === 'DEPOSIT' ? 'text-success' : 'text-danger'">
+              {{m.movementType === 'DEPOSIT' ? '+' : '-'}} {{m.amount | currency}}
+            </td>
+            <td>{{m.balance | currency}}</td>
+            <td style="text-align: right;">
+              <button class="btn btn-secondary btn-sm" (click)="goToDetail(m.id)">Ver</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="filteredMovements.length === 0" class="empty-state">
+      <div class="empty-icon-container">
+        <span class="material-icons">history</span>
+      </div>
+      <h3>No hay movimientos</h3>
+      <p>No se encontraron registros de movimientos con los filtros aplicados.</p>
+    </div>
+  </section>
+</div>

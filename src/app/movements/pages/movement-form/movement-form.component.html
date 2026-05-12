@@ -1,0 +1,43 @@
+<div class="container py-4">
+  <header class="mb-4 px-2">
+    <h1 class="h4 mb-0">Nuevo Movimiento</h1>
+  </header>
+
+  <div class="surface-alt mx-2">
+    <form [formGroup]="movementForm" (ngSubmit)="onSubmit()">
+      <div class="row">
+        <div class="col-12 mb-4">
+          <label class="form-label d-block text-secondary small mb-2">ID de la Cuenta</label>
+          <input type="text" formControlName="accountId" class="form-control" placeholder="Ej: 123456">
+        </div>
+
+        <div class="col-12 col-md-6 mb-4">
+          <label class="form-label d-block text-secondary small mb-2">Tipo de Movimiento</label>
+          <select formControlName="movementType" class="form-control">
+            <option value="DEPOSIT">Depósito</option>
+            <option value="WITHDRAWAL">Retiro</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-md-6 mb-4">
+          <label class="form-label d-block text-secondary small mb-2">Monto</label>
+          <input type="number" formControlName="amount" class="form-control" placeholder="0.00" step="0.01">
+        </div>
+
+        <div class="col-12 mb-4">
+          <label class="form-label d-block text-secondary small mb-2">Descripción (Opcional)</label>
+          <input type="text" formControlName="description" class="form-control" placeholder="Ej: Pago de servicios">
+        </div>
+      </div>
+
+      <div class="mt-5 d-flex gap-3">
+        <button type="submit" class="btn btn-success btn-lg w-100" [disabled]="movementForm.invalid">
+          Realizar Movimiento
+        </button>
+        <button type="button" class="btn btn-secondary w-100" (click)="goBack()">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
