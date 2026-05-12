@@ -1,43 +1,129 @@
-<div class="container py-4">
-  <header class="mb-4 px-2">
-    <h1 class="h4 mb-0">Nuevo Movimiento</h1>
-  </header>
+<div class="container animate-fade-in d-flex flex-column align-items-center justify-content-center min-vh-100 py-5">
+  <div class="desktop-card w-100" style="max-width: 500px;">
 
-  <div class="surface-alt mx-2">
+    <!-- Cabecera -->
+    <header class="text-center mb-5">
+      <div class="mb-3">
+        <span class="material-icons p-3 rounded-circle"
+              style="background: rgba(0, 92, 230, 0.1); color: var(--accent-color); font-size: 32px;">
+          swap_horiz
+        </span>
+      </div>
+      <h1 class="h3 fw-bold mb-1">{{ isEdit() ? 'Editar' : 'Nueva' }} Transacción</h1>
+      <p class="text-secondary small">Complete los pasos para procesar el movimiento</p>
+    </header>
+
+    <!-- Stepper Dots -->
+    <div class="d-flex justify-content-center gap-2 mb-5">
+      <div class="stepper-dot" [class.active]="currentStep() === 1" [class.completed]="currentStep() > 1"></div>
+      <div class="stepper-dot" [class.active]="currentStep() === 2" [class.completed]="currentStep() > 2"></div>
+      <div class="stepper-dot" [class.active]="currentStep() === 3"></div>
+    </div>
+
     <form [formGroup]="movementForm" (ngSubmit)="onSubmit()">
-      <div class="row">
-        <div class="col-12 mb-4">
-          <label class="form-label d-block text-secondary small mb-2">ID de la Cuenta</label>
-          <input type="text" formControlName="accountId" class="form-control" placeholder="Ej: 123456">
-        </div>
 
-        <div class="col-12 col-md-6 mb-4">
-          <label class="form-label d-block text-secondary small mb-2">Tipo de Movimiento</label>
-          <select formControlName="movementType" class="form-control">
-            <option value="DEPOSIT">Depósito</option>
-            <option value="WITHDRAWAL">Retiro</option>
+      <!-- Paso 1: Selección de Cuenta -->
+      <div *ngIf="currentStep() === 1" class="animate-fade-in">
+        <h2 class="h5 mb-4 fw-bold">1. Origen / Destino</h2>
+        <div class="mb-4">
+          <label class="text-secondary small d-block mb-2 fw-medium">Seleccionar Cuenta</label>
+          <select formControlName="accountId" class="form-control" [class.is-invalid]="movementForm.get('accountId')?.touched && movementForm.get('accountId')?.invalid">
+            <option value="" disabled selected>Seleccione una cuenta...</option>
+            <option *ngFor="let acc of accounts()" [value]="acc.id || acc.accountId">
+              {{acc.accountNumber}} - {{acc.accountType}}
+            </option>
           </select>
+          <div class="invalid-feedback">Debe seleccionar una cuenta válida.</div>
         </div>
 
-        <div class="col-12 col-md-6 mb-4">
-          <label class="form-label d-block text-secondary small mb-2">Monto</label>
-          <input type="number" formControlName="amount" class="form-control" placeholder="0.00" step="0.01">
+        <div *ngIf="selectedAccount" class="surface-alt p-3 mb-4 animate-fade-in">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-secondary small">Saldo disponible:</span>
+            <span class="fw-bold">{{selectedAccount.initialBalance | currency}}</span>
+          </div>
         </div>
 
-        <div class="col-12 mb-4">
-          <label class="form-label d-block text-secondary small mb-2">Descripción (Opcional)</label>
-          <input type="text" formControlName="description" class="form-control" placeholder="Ej: Pago de servicios">
+        <div class="mt-5 d-flex gap-3">
+          <button type="button" class="btn btn-secondary flex-grow-1" (click)="goBack()">Cancelar</button>
+          <button type="button" class="btn btn-primary flex-grow-1" (click)="nextStep()">Siguiente</button>
         </div>
       </div>
 
-      <div class="mt-5 d-flex gap-3">
-        <button type="submit" class="btn btn-success btn-lg w-100" [disabled]="movementForm.invalid">
-          Realizar Movimiento
-        </button>
-        <button type="button" class="btn btn-secondary w-100" (click)="goBack()">
-          Cancelar
-        </button>
+      <!-- Paso 2: Detalles de la Transacción -->
+      <div *ngIf="currentStep() === 2" class="animate-fade-in">
+        <h2 class="h5 mb-4 fw-bold">2. Detalles</h2>
+
+        <div class="mb-4">
+          <label class="text-secondary small d-block mb-2 fw-medium">Tipo de Movimiento</label>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn flex-grow-1"
+                    [class.btn-primary]="movementForm.get('movementType')?.value === 'DEPOSIT'"
+                    [class.btn-secondary]="movementForm.get('movementType')?.value !== 'DEPOSIT'"
+                    (click)="movementForm.get('movementType')?.setValue('DEPOSIT')">
+              Depósito
+            </button>
+            <button type="button" class="btn flex-grow-1"
+                    [class.btn-primary]="movementForm.get('movementType')?.value === 'WITHDRAWAL'"
+                    [class.btn-secondary]="movementForm.get('movementType')?.value !== 'WITHDRAWAL'"
+                    (click)="movementForm.get('movementType')?.setValue('WITHDRAWAL')">
+              Retiro
+            </button>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="text-secondary small d-block mb-2 fw-medium">Monto (USD)</label>
+          <div class="input-with-icon">
+            <input type="number" formControlName="amount" class="form-control" placeholder="0.00"
+                   [class.is-invalid]="movementForm.get('amount')?.touched && movementForm.get('amount')?.invalid">
+            <span class="material-icons">attach_money</span>
+          </div>
+          <div class="invalid-feedback">Ingrese un monto válido mayor a 0.</div>
+        </div>
+
+        <div class="mb-4">
+          <label class="text-secondary small d-block mb-2 fw-medium">Descripción (Opcional)</label>
+          <input type="text" formControlName="description" class="form-control" placeholder="Ej: Pago de servicios...">
+        </div>
+
+        <div class="mt-5 d-flex gap-3">
+          <button type="button" class="btn btn-secondary flex-grow-1" (click)="prevStep()">Atrás</button>
+          <button type="button" class="btn btn-primary flex-grow-1" (click)="nextStep()">Siguiente</button>
+        </div>
       </div>
+
+      <!-- Paso 3: Confirmación -->
+      <div *ngIf="currentStep() === 3" class="animate-fade-in">
+        <h2 class="h5 mb-4 fw-bold">3. Confirmación</h2>
+
+        <div class="surface-alt p-4 mb-5">
+          <div class="mb-3 d-flex justify-content-between border-bottom pb-2">
+            <span class="text-secondary small">Cuenta</span>
+            <span class="fw-medium">{{selectedAccount?.accountNumber}}</span>
+          </div>
+          <div class="mb-3 d-flex justify-content-between border-bottom pb-2">
+            <span class="text-secondary small">Operación</span>
+            <span class="fw-bold" [style.color]="movementForm.get('movementType')?.value === 'DEPOSIT' ? 'var(--success-color)' : 'var(--error-color)'">
+              {{movementForm.get('movementType')?.value === 'DEPOSIT' ? 'Depósito' : 'Retiro'}}
+            </span>
+          </div>
+          <div class="mb-0 d-flex justify-content-between">
+            <span class="text-secondary small">Monto Total</span>
+            <span class="fw-bold h4 mb-0">{{movementForm.get('amount')?.value | currency}}</span>
+          </div>
+        </div>
+
+        <div class="mt-5 d-flex gap-3">
+          <button type="button" class="btn btn-secondary flex-grow-1" (click)="prevStep()">Revisar</button>
+          <button type="submit" class="btn btn-success flex-grow-1" [disabled]="isLoading()">
+            <span *ngIf="!isLoading()">Confirmar y Procesar</span>
+            <div *ngIf="isLoading()" class="modern-loader" style="width: 20px; height: 20px;">
+              <div class="ring" style="border-width: 1px;"></div>
+            </div>
+          </button>
+        </div>
+      </div>
+
     </form>
   </div>
 </div>

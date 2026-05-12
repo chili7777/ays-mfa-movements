@@ -1,59 +1,87 @@
-<div class="container py-4">
-  <header class="mb-4 d-flex align-items-center gap-3 px-2">
-    <button class="btn btn-secondary btn-sm" (click)="goBack()" title="Volver">←</button>
-    <h1 class="h4 mb-0">Detalle del Movimiento</h1>
-  </header>
+<div class="container animate-fade-in py-5 d-flex justify-content-center">
+  <div class="desktop-card w-100" style="max-width: 600px;">
 
-  @if (loading()) {
-    <div class="text-center py-5">
-      <p class="text-secondary">Cargando información... </p>
-    </div>
-  } @else if (errorMessage()) {
-    <div class="surface mx-2 text-center py-5">
-      <div class="text-danger mb-3">{{errorMessage()}}</div>
-      <button class="btn btn-secondary" (click)="goBack()">Volver al listado</button>
-    </div>
-  } @else if (movement(); as m) {
-    <div class="surface mx-2">
-      <div class="d-flex justify-content-between align-items-center mb-4 pb-3" style="border-bottom: 1px solid var(--border-color, rgba(43, 49, 57, 0.5));">
-        <div>
-          <span class="text-secondary small d-block">ID Transacción</span>
-          <span class="fw-medium">{{m.id}}</span>
-        </div>
-        <span class="status-badge" [ngClass]="m.movementType === 'DEPOSIT' ? 'status-active' : 'status-inactive'">
-          {{getTypeLabel(m.movementType)}}
-        </span>
+    <!-- Cabecera -->
+    <header class="d-flex align-items-center gap-3 mb-5">
+      <button class="btn btn-secondary btn-sm rounded-circle p-2" (click)="goBack()">
+        <span class="material-icons">arrow_back</span>
+      </button>
+      <div>
+        <h1 class="h4 fw-bold mb-0">Detalle de Transacción</h1>
+        <p class="text-secondary small mb-0">Registro histórico de movimiento</p>
       </div>
+    </header>
 
-      <div class="row g-4">
-        <div class="col-12 col-md-6 mb-4">
-          <label class="text-secondary small d-block mb-1">Cuenta</label>
-          <span class="fw-medium h5">{{m.accountId}}</span>
+    @if (loading()) {
+      <div class="spinner-container">
+        <div class="modern-loader">
+          <div class="ring"></div>
+          <div class="ring"></div>
+          <div class="ring"></div>
+          <div class="core"></div>
         </div>
-        <div class="col-12 col-md-6 mb-4">
-          <label class="text-secondary small d-block mb-1">Fecha y Hora</label>
-          <span class="fw-medium">{{m.movementDate | date:'medium'}}</span>
-        </div>
-        <div class="col-12 col-md-6 mb-4">
-          <label class="text-secondary small d-block mb-1">Monto Transado</label>
-          <span class="fw-medium h4" [ngClass]="m.movementType === 'DEPOSIT' ? 'text-success' : 'text-danger'">
+        <p class="loading-text">Cargando detalles...</p>
+      </div>
+    } @else if (errorMessage()) {
+      <div class="surface text-center py-5">
+        <span class="material-icons text-danger mb-3" style="font-size: 48px;">error_outline</span>
+        <h3 class="h5 mb-2">Error de Carga</h3>
+        <p class="text-secondary mb-4">{{errorMessage()}}</p>
+        <button class="btn btn-primary" (click)="goBack()">Volver al listado</button>
+      </div>
+    } @else if (movement(); as m) {
+      <div class="animate-fade-in">
+
+        <!-- Tarjeta Principal de Monto -->
+        <div class="surface-alt p-4 mb-4 text-center">
+          <span class="text-secondary small d-block mb-1">Monto de la Operación</span>
+          <h2 class="h1 fw-bold mb-2" [style.color]="m.movementType === 'DEPOSIT' ? 'var(--success-color)' : 'var(--error-color)'">
             {{m.movementType === 'DEPOSIT' ? '+' : '-'}} {{m.amount | currency}}
-          </span>
+          </h2>
+          <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill"
+               [style.background]="m.movementType === 'DEPOSIT' ? 'rgba(0, 192, 118, 0.1)' : 'rgba(212, 16, 32, 0.1)'"
+               [style.color]="m.movementType === 'DEPOSIT' ? 'var(--success-color)' : 'var(--error-color)'">
+            <span class="status-dot" [class.active]="m.movementType === 'DEPOSIT'"></span>
+            <span class="small fw-bold">{{getTypeLabel(m.movementType)}}</span>
+          </div>
         </div>
-        <div class="col-12 col-md-6 mb-4">
-          <label class="text-secondary small d-block mb-1">Saldo Resultante</label>
-          <span class="fw-medium h5">{{m.balance | currency}}</span>
-        </div>
-        <div class="col-12 mb-4">
-          <label class="text-secondary small d-block mb-1">Descripción</label>
-          <span class="fw-medium">{{m.description || 'Sin descripción'}}</span>
-        </div>
-      </div>
 
-      <div class="mt-4 pt-4 text-center">
-        <p class="text-secondary small">Este es un registro histórico y no puede ser modificado.</p>
-        <button class="btn btn-secondary w-100 mt-2" (click)="goBack()">Cerrar</button>
+        <!-- Información Detallada -->
+        <div class="surface p-4">
+          <div class="row g-4">
+            <div class="col-12 col-md-6">
+              <label class="text-secondary small d-block mb-1">Referencia de Cuenta</label>
+              <div class="fw-medium">
+                {{account()?.accountNumber || m.accountId}}
+                <span class="text-secondary small d-block">{{account()?.accountType}}</span>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="text-secondary small d-block mb-1">Fecha y Hora</label>
+              <div class="fw-medium">{{m.movementDate | date:'dd MMM, yyyy'}}</div>
+              <div class="text-secondary small">{{m.movementDate | date:'HH:mm:ss'}}</div>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="text-secondary small d-block mb-1">Saldo Resultante</label>
+              <div class="fw-bold text-secondary h5 mb-0">{{m.balance | currency}}</div>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="text-secondary small d-block mb-1">ID Transacción</label>
+              <div class="text-secondary small font-monospace">{{m.id}}</div>
+            </div>
+            <div class="col-12 pt-2">
+              <label class="text-secondary small d-block mb-1">Concepto / Descripción</label>
+              <div class="surface-alt p-3 rounded small">
+                {{m.description || 'Sin descripción adicional para esta transacción.'}}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5 d-flex gap-3">
+          <button class="btn btn-secondary flex-grow-1" (click)="goBack()">Cerrar</button>
+        </div>
       </div>
-    </div>
-  }
+    }
+  </div>
 </div>

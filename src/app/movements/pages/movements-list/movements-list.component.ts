@@ -1,10 +1,11 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MovementService } from '../../services/movement.service';
 import { Movement } from '../../interfaces/movement.interface';
 import { DateRangePickerComponent } from '../../components/date-range-picker/date-range-picker.component';
+import { AccountService } from '../../services/account.service';
 
 @Component({
   selector: 'app-movements-list',
@@ -15,59 +16,70 @@ import { DateRangePickerComponent } from '../../components/date-range-picker/dat
 export class MovementsListComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly movementService = inject(MovementService);
+  private readonly accountService = inject(AccountService);
 
-  movements: Movement[] = [];
-  filteredMovements: Movement[] = [];
+  // Signals para el estado
+  movements = signal<Movement[]>([]);
+  accounts = signal<any[]>([]);
+  isLoading = signal(true);
 
   // Filtros
-  accountId: string = '';
-  fromDate: string = '';
-  toDate: string = '';
-  isFilterVisible: boolean = false;
-  isDatePickerOpen: boolean = false;
+  accountId = signal<string>('');
+  fromDate = signal<string>('');
+  toDate = signal<string>('');
+
+  isFilterVisible = signal(false);
+  isDatePickerOpen = signal(false);
+
+  // Movimientos filtrados (cliente-side si es necesario, pero cargamos de API)
+  filteredMovements = computed(() => this.movements());
 
   ngOnInit(): void {
+    this.loadInitialData();
+  }
+
+  loadInitialData(): void {
+    this.accountService.getAccounts().subscribe({
+      next: (data) => this.accounts.set(data),
+      error: (err) => console.error('Error al cargar cuentas', err)
+    });
     this.loadMovements();
   }
 
   toggleFilters(): void {
-    this.isFilterVisible = !this.isFilterVisible;
-  }
-
-  openDatePicker(): void {
-    this.isDatePickerOpen = true;
+    this.isFilterVisible.update(v => !v);
   }
 
   onDateRangeSelected(range: { fromDate: string; toDate: string }): void {
-    this.fromDate = range.fromDate;
-    this.toDate = range.toDate;
+    this.fromDate.set(range.fromDate);
+    this.toDate.set(range.toDate);
     this.loadMovements();
   }
 
   loadMovements(): void {
+    this.isLoading.set(true);
     const params = {
-      accountId: this.accountId || undefined,
-      fromDate: this.fromDate || undefined,
-      toDate: this.toDate || undefined
+      accountId: this.accountId() || undefined,
+      fromDate: this.fromDate() || undefined,
+      toDate: this.toDate() || undefined
     };
 
     this.movementService.getAllMovements(params).subscribe({
       next: (data) => {
-        this.movements = data;
-        this.filteredMovements = data;
+        this.movements.set(data);
+        this.isLoading.set(false);
       },
-      error: (err) => console.error('Error al cargar movimientos', err)
+      error: (err) => {
+        console.error('Error al cargar movimientos', err);
+        this.isLoading.set(false);
+      }
     });
   }
 
-  onFilter(): void {
-    this.loadMovements();
-  }
-
   clearFilters(): void {
-    this.accountId = '';
-    this.fromDate = '';
-    this.toDate = '';
+    this.accountId.set('');
+    this.fromDate.set('');
+    this.toDate.set('');
     this.loadMovements();
   }
 
@@ -81,5 +93,10 @@ export class MovementsListComponent implements OnInit {
 
   getTypeLabel(type: string): string {
     return type === 'DEPOSIT' ? 'Depósito' : 'Retiro';
+  }
+
+  getAccountLabel(accId: string): string {
+    const acc = this.accounts().find(a => a.id === accId || a.accountId === accId);
+    return acc ? `${acc.accountNumber} - ${acc.accountType}` : accId;
   }
 }
