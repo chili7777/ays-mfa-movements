@@ -38,17 +38,28 @@ export class MovementService {
 
     return this.http.get<any>(url, { headers: this.getHeaders() }).pipe(
       map(response => {
-        if (Array.isArray(response)) return response;
-        if (response && response.data && Array.isArray(response.data)) return response.data;
-        if (response && response.movements && Array.isArray(response.movements)) return response.movements;
-        return [];
+        let data = [];
+        if (Array.isArray(response)) data = response;
+        else if (response && response.data && Array.isArray(response.data)) data = response.data;
+        else if (response && response.movements && Array.isArray(response.movements)) data = response.movements;
+
+        return data.map((m: any) => ({
+          ...m,
+          id: m.id || m._id || m.movementId || m.transactionId
+        }));
       })
     );
   }
 
   getMovementById(id: string): Observable<Movement> {
     return this.http.get<any>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() }).pipe(
-      map(response => response.data || response.movement || response)
+      map(response => {
+        const m = response.data || response.movement || response;
+        return {
+          ...m,
+          id: m.id || m._id || m.movementId || m.transactionId || id
+        };
+      })
     );
   }
 

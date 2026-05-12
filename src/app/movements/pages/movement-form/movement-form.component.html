@@ -6,11 +6,29 @@
       <div class="mb-3">
         <span class="material-icons p-3 rounded-circle"
               style="background: rgba(0, 92, 230, 0.1); color: var(--accent-color); font-size: 32px;">
-          swap_horiz
+          @if (mode() === 'external') {
+            payments
+          } @else if (mode() === 'internal') {
+            sync_alt
+          } @else {
+            swap_horiz
+          }
         </span>
       </div>
-      <h1 class="h3 fw-bold mb-1">{{ isEdit() ? 'Editar' : 'Nueva' }} Transacción</h1>
-      <p class="text-secondary small">Complete los pasos para procesar el movimiento</p>
+      <h1 class="h3 fw-bold mb-1">
+        @if (mode() === 'external') {
+          Transferencia a Terceros
+        } @else if (mode() === 'internal') {
+          Transferencia entre Cuentas
+        } @else {
+          {{ isEdit() ? 'Editar' : 'Nueva' }} Transacción
+        }
+      </h1>
+      <p class="text-secondary small">
+        {{ mode() === 'external' ? 'Transferir dinero a otras personas' :
+           mode() === 'internal' ? 'Mover dinero entre sus propias cuentas' :
+           'Complete los pasos para procesar el movimiento' }}
+      </p>
     </header>
 
     <!-- Stepper Dots -->
@@ -44,8 +62,14 @@
         </div>
 
         <div class="mt-5 d-flex gap-3">
-          <button type="button" class="btn btn-secondary flex-grow-1" (click)="goBack()">Cancelar</button>
-          <button type="button" class="btn btn-primary flex-grow-1" (click)="nextStep()">Siguiente</button>
+          <button type="button" class="btn btn-secondary flex-grow-1" (click)="goBack()">
+            <span class="material-icons d-lg-none" style="font-size: 18px;">close</span>
+            <span class="d-none d-lg-inline">Cancelar</span>
+          </button>
+          <button type="button" class="btn btn-primary flex-grow-1" (click)="nextStep()">
+            <span class="material-icons d-lg-none" style="font-size: 18px;">arrow_forward</span>
+            <span class="d-none d-lg-inline">Siguiente</span>
+          </button>
         </div>
       </div>
 
@@ -87,8 +111,14 @@
         </div>
 
         <div class="mt-5 d-flex gap-3">
-          <button type="button" class="btn btn-secondary flex-grow-1" (click)="prevStep()">Atrás</button>
-          <button type="button" class="btn btn-primary flex-grow-1" (click)="nextStep()">Siguiente</button>
+          <button type="button" class="btn btn-secondary flex-grow-1" (click)="prevStep()">
+            <span class="material-icons d-lg-none" style="font-size: 18px;">arrow_back</span>
+            <span class="d-none d-lg-inline">Atrás</span>
+          </button>
+          <button type="button" class="btn btn-primary flex-grow-1" (click)="nextStep()">
+            <span class="material-icons d-lg-none" style="font-size: 18px;">arrow_forward</span>
+            <span class="d-none d-lg-inline">Siguiente</span>
+          </button>
         </div>
       </div>
 
@@ -114,11 +144,18 @@
         </div>
 
         <div class="mt-5 d-flex gap-3">
-          <button type="button" class="btn btn-secondary flex-grow-1" (click)="prevStep()">Revisar</button>
+          <button type="button" class="btn btn-secondary flex-grow-1" (click)="prevStep()">
+            <span class="material-icons d-lg-none" style="font-size: 18px;">edit</span>
+            <span class="d-none d-lg-inline">Revisar</span>
+          </button>
           <button type="submit" class="btn btn-success flex-grow-1" [disabled]="isLoading()">
-            <span *ngIf="!isLoading()">Confirmar y Procesar</span>
-            <div *ngIf="isLoading()" class="modern-loader" style="width: 20px; height: 20px;">
+            <span *ngIf="!isLoading()" class="d-lg-none material-icons" style="font-size: 18px;">check</span>
+            <span *ngIf="!isLoading()" class="d-none d-lg-inline">Confirmar y Procesar</span>
+            <div *ngIf="isLoading()" class="modern-loader" style="width: 20px; height: 20px; margin: 0 auto;">
               <div class="ring" style="border-width: 1px;"></div>
+              <div class="ring" style="border-width: 1px;"></div>
+              <div class="ring" style="border-width: 1px;"></div>
+              <div class="core" style="width: 4px; height: 4px;"></div>
             </div>
           </button>
         </div>

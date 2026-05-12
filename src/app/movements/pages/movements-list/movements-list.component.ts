@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { MovementService } from '../../services/movement.service';
 import { Movement } from '../../interfaces/movement.interface';
 import { DateRangePickerComponent } from '../../components/date-range-picker/date-range-picker.component';
@@ -10,7 +10,7 @@ import { AccountService } from '../../services/account.service';
 @Component({
   selector: 'app-movements-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, DateRangePickerComponent],
+  imports: [CommonModule, FormsModule, RouterModule, DateRangePickerComponent],
   templateUrl: './movements-list.component.html'
 })
 export class MovementsListComponent implements OnInit {
@@ -33,6 +33,45 @@ export class MovementsListComponent implements OnInit {
 
   // Movimientos filtrados (cliente-side si es necesario, pero cargamos de API)
   filteredMovements = computed(() => this.movements());
+
+  groupedMovements = computed(() => {
+    const groups: { date: string, items: Movement[] }[] = [];
+    // Ordenar por fecha descendente primero para asegurar el orden de los grupos
+    const sorted = [...this.filteredMovements()].sort((a, b) =>
+      new Date(b.movementDate).getTime() - new Date(a.movementDate).getTime()
+    );
+
+    sorted.forEach(m => {
+      const dateKey = m.movementDate.split('T')[0];
+      let group = groups.find(g => g.date === dateKey);
+      if (!group) {
+        group = { date: dateKey, items: [] };
+        groups.push(group);
+      }
+      group.items.push(m);
+    });
+    return groups;
+  });
+
+  dateRangeLabel = computed(() => {
+    if (!this.fromDate() && !this.toDate()) return 'Todas las fechas';
+
+    const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
+
+    if (this.fromDate() && !this.toDate()) {
+      return `Desde ${this.formatDateLabel(this.fromDate())}`;
+    }
+    if (!this.fromDate() && this.toDate()) {
+      return `Hasta ${this.formatDateLabel(this.toDate())}`;
+    }
+    return `${this.formatDateLabel(this.fromDate())} - ${this.formatDateLabel(this.toDate())}`;
+  });
+
+  private formatDateLabel(dateStr: string): string {
+    if (!dateStr) return '';
+    const date = new Date(dateStr + 'T00:00:00');
+    return new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(date);
+  }
 
   ngOnInit(): void {
     this.loadInitialData();
@@ -83,8 +122,12 @@ export class MovementsListComponent implements OnInit {
     this.loadMovements();
   }
 
-  goToCreate(): void {
-    this.router.navigate(['/movements/create']);
+  goToExternalTransfer(): void {
+    this.router.navigate(['/movements/create'], { queryParams: { mode: 'external' } });
+  }
+
+  goToInternalTransfer(): void {
+    this.router.navigate(['/movements/create'], { queryParams: { mode: 'internal' } });
   }
 
   goToDetail(id: string): void {
@@ -98,5 +141,18 @@ export class MovementsListComponent implements OnInit {
   getAccountLabel(accId: string): string {
     const acc = this.accounts().find(a => a.id === accId || a.accountId === accId);
     return acc ? `${acc.accountNumber} - ${acc.accountType}` : accId;
+  }
+
+  getGroupLabel(dateKey: string): string {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const groupDate = new Date(dateKey + 'T00:00:00');
+
+    if (groupDate.getTime() === today.getTime()) return 'Hoy';
+    if (groupDate.getTime() === yesterday.getTime()) return 'Ayer';
+    return '';
   }
 }

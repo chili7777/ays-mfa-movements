@@ -27,7 +27,10 @@
         <span class="material-icons text-danger mb-3" style="font-size: 48px;">error_outline</span>
         <h3 class="h5 mb-2">Error de Carga</h3>
         <p class="text-secondary mb-4">{{errorMessage()}}</p>
-        <button class="btn btn-primary" (click)="goBack()">Volver al listado</button>
+        <button class="btn btn-primary" (click)="goBack()">
+          <span class="material-icons d-lg-none" style="font-size: 18px;">arrow_back</span>
+          <span class="d-none d-lg-inline">Volver al listado</span>
+        </button>
       </div>
     } @else if (movement(); as m) {
       <div class="animate-fade-in">
@@ -58,7 +61,7 @@
             </div>
             <div class="col-12 col-md-6">
               <label class="text-secondary small d-block mb-1">Fecha y Hora</label>
-              <div class="fw-medium">{{m.movementDate | date:'dd MMM, yyyy'}}</div>
+              <div class="fw-medium text-capitalize">{{m.movementDate | date:'EEEE, dd MMM.yyyy':'':'es-ES'}}</div>
               <div class="text-secondary small">{{m.movementDate | date:'HH:mm:ss'}}</div>
             </div>
             <div class="col-12 col-md-6">
@@ -79,7 +82,10 @@
         </div>
 
         <div class="mt-5 d-flex gap-3">
-          <button class="btn btn-secondary flex-grow-1" (click)="goBack()">Cerrar</button>
+          <button class="btn btn-secondary flex-grow-1" (click)="goBack()">
+            <span class="material-icons d-lg-none" style="font-size: 18px;">close</span>
+            <span class="d-none d-lg-inline">Cerrar</span>
+          </button>
         </div>
       </div>
     }

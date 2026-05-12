@@ -26,6 +26,7 @@ export class MovementFormComponent implements OnInit {
   movementForm: FormGroup;
   isEdit = signal(false);
   movementId = signal<string | null>(null);
+  mode = signal<string | null>(null);
 
   constructor() {
     this.movementForm = this.fb.group({
@@ -39,6 +40,11 @@ export class MovementFormComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadAccounts();
+
+    // Leer modo de los query params
+    this.route.queryParamMap.subscribe(params => {
+      this.mode.set(params.get('mode'));
+    });
 
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
