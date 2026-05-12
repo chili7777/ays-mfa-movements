@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MovementService } from '../../services/movement.service';
 import { Movement } from '../../interfaces/movement.interface';
+import { DateRangePickerComponent } from '../../components/date-range-picker/date-range-picker.component';
 
 @Component({
   selector: 'app-movements-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DateRangePickerComponent],
   templateUrl: './movements-list.component.html'
 })
 export class MovementsListComponent implements OnInit {
@@ -23,6 +24,7 @@ export class MovementsListComponent implements OnInit {
   fromDate: string = '';
   toDate: string = '';
   isFilterVisible: boolean = false;
+  isDatePickerOpen: boolean = false;
 
   ngOnInit(): void {
     this.loadMovements();
@@ -30,6 +32,16 @@ export class MovementsListComponent implements OnInit {
 
   toggleFilters(): void {
     this.isFilterVisible = !this.isFilterVisible;
+  }
+
+  openDatePicker(): void {
+    this.isDatePickerOpen = true;
+  }
+
+  onDateRangeSelected(range: { fromDate: string; toDate: string }): void {
+    this.fromDate = range.fromDate;
+    this.toDate = range.toDate;
+    this.loadMovements();
   }
 
   loadMovements(): void {

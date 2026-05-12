@@ -1,11 +1,13 @@
 <div class="container">
   <!-- Botón de filtrado para Mobile -->
-  <div class="show-mobile-only px-3 pt-4">
-    <button class="btn btn-secondary w-100 d-flex align-items-center justify-content-center gap-2"
-            (click)="toggleFilters()"
-            [class.btn-primary]="isFilterVisible">
+  <div class="show-mobile-only px-3 pt-4 d-flex gap-2">
+    <button class="btn btn-secondary flex-grow-1 d-flex align-items-center justify-content-center gap-2"
+            (click)="openDatePicker()">
       <span class="material-icons">calendar_today</span>
-      <span>Filtrar por fechas</span>
+      <span>{{ fromDate ? (fromDate | date:'dd/MM') + ' - ' + (toDate | date:'dd/MM') : 'Filtrar por fechas' }}</span>
+    </button>
+    <button class="btn btn-secondary" (click)="toggleFilters()" [class.btn-primary]="isFilterVisible">
+      <span class="material-icons">filter_list</span>
     </button>
   </div>
 
@@ -111,4 +113,12 @@
       <p>No se encontraron registros de movimientos con los filtros aplicados.</p>
     </div>
   </section>
+
+  <app-date-range-picker
+    [isOpen]="isDatePickerOpen"
+    [initialFromDate]="fromDate"
+    [initialToDate]="toDate"
+    (close)="isDatePickerOpen = false"
+    (selectRange)="onDateRangeSelected($event)">
+  </app-date-range-picker>
 </div>
