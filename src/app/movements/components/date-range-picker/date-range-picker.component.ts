@@ -22,7 +22,7 @@ export class DateRangePickerComponent implements OnInit, OnChanges {
   @Output() selectRange = new EventEmitter<{ fromDate: string; toDate: string }>();
 
   months: MonthData[] = [];
-  weekDays = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'];
+  weekDays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
   tempFromDate: string = '';
   tempToDate: string = '';
@@ -47,8 +47,8 @@ export class DateRangePickerComponent implements OnInit, OnChanges {
 
   private generateMonths(): void {
     const today = new Date();
-    // Generar mes actual y los dos anteriores
-    for (let i = 0; i < 3; i++) {
+    // Generar 12 meses hacia atrás
+    for (let i = 0; i < 12; i++) {
       const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
       this.months.push(this.getMonthData(date));
     }
@@ -58,6 +58,8 @@ export class DateRangePickerComponent implements OnInit, OnChanges {
     const year = date.getFullYear();
     const month = date.getMonth();
     const firstDay = new Date(year, month, 1).getDay();
+    // Ajustar para que Lunes sea el primer día (0: Lu, ..., 6: Do)
+    const adjustedFirstDay = (firstDay + 6) % 7;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     const label = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(date);
@@ -69,21 +71,29 @@ export class DateRangePickerComponent implements OnInit, OnChanges {
     return {
       label: label.charAt(0).toUpperCase() + label.slice(1),
       days,
-      padding: Array(firstDay).fill(0)
+      padding: Array(adjustedFirstDay).fill(0)
     };
   }
 
   onDateClick(date: Date): void {
+    if (this.isFuture(date)) return;
+
     const formatted = this.formatDate(date);
 
-    if (this.selecting === 'from') {
+    if (this.tempFromDate && this.tempToDate) {
+      // Reiniciar rango
       this.tempFromDate = formatted;
       this.tempToDate = '';
       this.selecting = 'to';
+    } else if (!this.tempFromDate) {
+      this.tempFromDate = formatted;
+      this.selecting = 'to';
     } else {
+      // Ya hay from, seleccionando to
       if (new Date(formatted) < new Date(this.tempFromDate)) {
         this.tempFromDate = formatted;
         this.tempToDate = '';
+        this.selecting = 'to';
       } else {
         this.tempToDate = formatted;
         this.selecting = 'from';
@@ -91,9 +101,23 @@ export class DateRangePickerComponent implements OnInit, OnChanges {
     }
   }
 
+  isFuture(date: Date): boolean {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date > today;
+  }
+
   isSelected(date: Date): boolean {
     const formatted = this.formatDate(date);
     return formatted === this.tempFromDate || formatted === this.tempToDate;
+  }
+
+  isStart(date: Date): boolean {
+    return this.formatDate(date) === this.tempFromDate && !!this.tempToDate;
+  }
+
+  isEnd(date: Date): boolean {
+    return this.formatDate(date) === this.tempToDate && !!this.tempFromDate;
   }
 
   isInRange(date: Date): boolean {
@@ -114,6 +138,21 @@ export class DateRangePickerComponent implements OnInit, OnChanges {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  get rangeSummary(): string {
+    if (!this.tempFromDate) return 'Selecciona una fecha';
+    if (!this.tempToDate) return `Del ${this.formatReadableDate(this.tempFromDate)}`;
+    return `Del ${this.formatReadableDate(this.tempFromDate)}, al ${this.formatReadableDate(this.tempToDate)}`;
+  }
+
+  private formatReadableDate(dateStr: string): string {
+    const date = new Date(dateStr + 'T00:00:00');
+    return new Intl.DateTimeFormat('es-ES', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    }).format(date);
   }
 
   onClose(): void {

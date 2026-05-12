@@ -1,32 +1,16 @@
 <div class="date-picker-overlay" [class.open]="isOpen" (click)="onClose()">
   <div class="date-picker-modal" (click)="$event.stopPropagation()">
     <header class="date-picker-header">
-      <button class="btn-close" (click)="onClose()">
-        <span class="material-icons">close</span>
+      <button class="btn-back" (click)="onClose()">
+        <span class="material-icons">arrow_back</span>
       </button>
-      <h2 class="h5 mb-0">Seleccionar Fechas</h2>
-      <button class="btn btn-primary btn-sm" (click)="applySelection()" [disabled]="!tempFromDate || !tempToDate">
-        Aplicar
-      </button>
+      <h2 class="title-centered">Filtro de movimientos</h2>
+      <div class="spacer"></div>
     </header>
-
-    <div class="selected-summary px-3 py-2">
-      <div class="d-flex justify-content-between align-items-center">
-        <div class="date-box" [class.active]="selecting === 'from'">
-          <span class="small text-secondary d-block">Desde</span>
-          <span class="fw-bold">{{ tempFromDate || 'Seleccionar' }}</span>
-        </div>
-        <span class="material-icons text-secondary">arrow_forward</span>
-        <div class="date-box" [class.active]="selecting === 'to'">
-          <span class="small text-secondary d-block">Hasta</span>
-          <span class="fw-bold">{{ tempToDate || 'Seleccionar' }}</span>
-        </div>
-      </div>
-    </div>
 
     <div class="calendar-scroll-container">
       <div *ngFor="let month of months" class="calendar-month mb-4">
-        <h3 class="h6 px-3 mb-3">{{ month.label }}</h3>
+        <h3 class="month-label px-3">{{ month.label }}</h3>
         <div class="calendar-grid">
           <div *ngFor="let day of weekDays" class="calendar-day-header">{{ day }}</div>
           <div *ngFor="let empty of month.padding" class="calendar-day empty"></div>
@@ -34,16 +18,24 @@
                class="calendar-day"
                [class.selected]="isSelected(date)"
                [class.in-range]="isInRange(date)"
+               [class.range-start]="isStart(date)"
+               [class.range-end]="isEnd(date)"
                [class.today]="isToday(date)"
+               [class.future]="isFuture(date)"
                (click)="onDateClick(date)">
-            {{ date.getDate() }}
+            <span class="day-text">{{ date.getDate() }}</span>
           </div>
         </div>
       </div>
     </div>
 
     <div class="p-3 footer-actions">
-      <button class="btn btn-secondary w-100" (click)="clearSelection()">Limpiar selección</button>
+      <div class="range-summary-footer mb-3">
+        {{ rangeSummary }}
+      </div>
+      <button class="btn btn-apply-premium" (click)="applySelection()" [disabled]="!tempFromDate || !tempToDate">
+        Ver movimientos
+      </button>
     </div>
   </div>
 </div>
