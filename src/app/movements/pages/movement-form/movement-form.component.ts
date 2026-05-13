@@ -1,8 +1,9 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, startWith } from 'rxjs';
 import { MovementService } from '../../services/movement.service';
 import { AccountService } from '../../services/account.service';
 import { CustomerService } from '../../services/customer.service';
@@ -30,7 +31,22 @@ export class MovementFormComponent implements OnInit {
   isLoading = signal(false);
   accounts = signal<any[]>([]);
 
-  movementForm: FormGroup;
+  movementForm: FormGroup = inject(FormBuilder).group({
+    sourceAccountId: [''], // Para transferencias
+    accountId: ['', [Validators.required]],
+    externalAccountNumber: [''], // Para búsqueda externa
+    movementType: ['DEPOSIT', [Validators.required]],
+    amount: [0, [Validators.required, Validators.min(0.01)]],
+    description: ['', [Validators.maxLength(100)]],
+    status: [true]
+  });
+
+  // Señales reactivas para los valores del formulario
+  formAmount = toSignal(this.movementForm.get('amount')!.valueChanges.pipe(startWith(0)), { initialValue: 0 });
+  formType = toSignal(this.movementForm.get('movementType')!.valueChanges.pipe(startWith('DEPOSIT')), { initialValue: 'DEPOSIT' });
+  formSourceId = toSignal(this.movementForm.get('sourceAccountId')!.valueChanges.pipe(startWith('')), { initialValue: '' });
+  formAccountId = toSignal(this.movementForm.get('accountId')!.valueChanges.pipe(startWith('')), { initialValue: '' });
+
   isEdit = signal(false);
   movementId = signal<string | null>(null);
   mode = signal<string | null>(null);
@@ -73,17 +89,46 @@ export class MovementFormComponent implements OnInit {
     return all;
   });
 
-  constructor() {
-    this.movementForm = this.fb.group({
-      sourceAccountId: [''], // Para transferencias
-      accountId: ['', [Validators.required]],
-      externalAccountNumber: [''], // Para búsqueda externa
-      movementType: ['DEPOSIT', [Validators.required]],
-      amount: [0, [Validators.required, Validators.min(0.01)]],
-      description: ['', [Validators.maxLength(100)]],
-      status: [true]
-    });
-  }
+  selectedAccount = computed(() => {
+    if (this.mode() === 'external' && this.externalAccount()) {
+      return this.externalAccount();
+    }
+    const id = this.formAccountId();
+    return this.accounts().find(a => a.id === id || a.accountId === id);
+  });
+
+  sourceAccount = computed(() => {
+    const id = this.formSourceId();
+    return this.accounts().find(a => a.id === id || a.accountId === id);
+  });
+
+  predictedSourceBalance = computed(() => {
+    const source = this.sourceAccount();
+    if (!source) return null;
+    const amount = this.formAmount() || 0;
+    if (this.mode()) { // Transferencia: siempre resta de origen
+      return source.initialBalance - amount;
+    }
+    return null;
+  });
+
+  predictedDestinationBalance = computed(() => {
+    const dest = this.selectedAccount();
+    if (!dest) return null;
+    const amount = this.formAmount() || 0;
+    const mode = this.mode();
+    const type = this.formType();
+
+    if (mode) { // Transferencia: suma al destino
+      return (dest.initialBalance || 0) + amount;
+    } else { // Movimiento normal
+      return type === 'DEPOSIT'
+        ? dest.initialBalance + amount
+        : dest.initialBalance - amount;
+    }
+  });
+
+  constructor() { }
 
   ngOnInit(): void {
     this.loadAccounts();
@@ -182,20 +227,27 @@ export class MovementFormComponent implements OnInit {
 
   nextStep(): void {
     if (this.currentStep() === 1) {
-      const sourceCtrl = this.movementForm.get('sourceAccountId');
-      const accountCtrl = this.movementForm.get('accountId');
-
-      if (sourceCtrl?.invalid) sourceCtrl.markAsTouched();
-      if (accountCtrl?.invalid) accountCtrl.markAsTouched();
-
-      if (sourceCtrl?.invalid || accountCtrl?.invalid) return;
-    }
-    if (this.currentStep() === 2 && (this.movementForm.get('movementType')?.invalid || this.movementForm.get('amount')?.invalid)) {
-      this.movementForm.get('movementType')?.markAsTouched();
-      this.movementForm.get('amount')?.markAsTouched();
-      return;
+      // Validar selección de cuentas
+      const controls = this.mode() ? ['sourceAccountId', 'accountId'] : ['accountId'];
+      if (this.validateControls(controls)) return;
+    } else if (this.currentStep() === 2) {
+      // Validar monto y tipo
+      const controls = this.mode() ? ['amount'] : ['movementType', 'amount'];
+      if (this.validateControls(controls)) return;
     }
     this.currentStep.update(s => s + 1);
+  }
+
+  private validateControls(controls: string[]): boolean {
+    let hasError = false;
+    controls.forEach(controlName => {
+      const control = this.movementForm.get(controlName);
+      if (control?.invalid) {
+        control.markAsTouched();
+        hasError = true;
+      }
+    });
+    return hasError;
   }
 
   prevStep(): void {
@@ -276,16 +328,4 @@ export class MovementFormComponent implements OnInit {
     this.location.back();
   }
 
-  get selectedAccount() {
-    if (this.mode() === 'external' && this.externalAccount()) {
-      return this.externalAccount();
-    }
-    const id = this.movementForm.get('accountId')?.value;
-    return this.accounts().find(a => a.id === id || a.accountId === id);
-  }
-
-  get sourceAccount() {
-    const id = this.movementForm.get('sourceAccountId')?.value;
-    return this.accounts().find(a => a.id === id || a.accountId === id);
-  }
 }

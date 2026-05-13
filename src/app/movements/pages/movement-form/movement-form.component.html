@@ -41,9 +41,9 @@
 
     <form [formGroup]="movementForm" (ngSubmit)="onSubmit()">
 
-      <!-- Paso 1: Selección de Cuenta -->
+      <!-- Paso 1: Selección de Cuentas -->
       <div *ngIf="currentStep() === 1" class="animate-fade-in">
-        <h2 class="h5 mb-4 fw-bold">1. Origen / Destino</h2>
+        <h2 class="h5 mb-4 fw-bold">1. Selección de Cuentas</h2>
 
         <!-- Cuenta de Origen (Solo si es transferencia) -->
         <div class="mb-4" *ngIf="mode()">
@@ -55,7 +55,9 @@
               {{acc.accountNumber}} - {{acc.accountType}} ({{acc.initialBalance | currency}})
             </option>
           </select>
-          <div class="invalid-feedback">Debe seleccionar la cuenta desde la cual se enviará el dinero.</div>
+          <div class="invalid-feedback" *ngIf="movementForm.get('sourceAccountId')?.touched && movementForm.get('sourceAccountId')?.invalid">
+            Debe seleccionar la cuenta desde la cual se enviará el dinero.
+          </div>
         </div>
 
         <div class="mb-4">
@@ -68,6 +70,7 @@
               <div class="position-relative flex-grow-1">
                 <input type="text" formControlName="externalAccountNumber"
                        class="form-control" placeholder="Número de cuenta..."
+                       inputmode="numeric"
                        (keyup.enter)="searchExternalAccount()"
                        [class.is-invalid]="accountSearchError()">
                 <div *ngIf="accountSearchError()" class="invalid-feedback">{{accountSearchError()}}</div>
@@ -89,33 +92,32 @@
                 {{acc.accountNumber}} - {{acc.accountType}}
               </option>
             </select>
-            <div class="invalid-feedback">Debe seleccionar una cuenta válida.</div>
+            <div class="invalid-feedback" *ngIf="movementForm.get('accountId')?.touched && movementForm.get('accountId')?.invalid">
+              Debe seleccionar una cuenta válida.
+            </div>
           }
         </div>
 
-        <div *ngIf="selectedAccount || sourceAccount" class="surface-alt p-3 mb-4 animate-fade-in">
+        <!-- Información de cuenta seleccionada -->
+        <div *ngIf="selectedAccount() || sourceAccount()" class="surface-alt p-3 mb-4 animate-fade-in rounded-3">
           <!-- Detalle de Origen -->
-          <div *ngIf="mode() && sourceAccount" class="mb-2 border-bottom pb-2">
+          <div *ngIf="mode() && sourceAccount()" class="mb-2 border-bottom pb-2">
             <div class="d-flex justify-content-between align-items-center mb-1">
-              <span class="text-secondary x-small">Origen:</span>
-              <span class="fw-medium small">{{sourceAccount.accountNumber}}</span>
-            </div>
-            <div class="d-flex justify-content-between align-items-center">
-              <span class="text-secondary x-small">Saldo:</span>
-              <span class="fw-bold small">{{sourceAccount.initialBalance | currency}}</span>
+              <span class="text-secondary x-small">Saldo en cuenta origen:</span>
+              <span class="fw-bold small text-primary">{{sourceAccount().initialBalance | currency}}</span>
             </div>
           </div>
 
           <!-- Detalle de Destino -->
-          <div *ngIf="selectedAccount">
+          <div *ngIf="selectedAccount()">
             <div class="d-flex justify-content-between align-items-center mb-1" *ngIf="mode() === 'external'">
               <span class="text-secondary x-small">Titular:</span>
-              <span class="fw-bold small">{{selectedAccount.clientName || 'Verificado'}}</span>
+              <span class="fw-bold small">{{selectedAccount().clientName || 'Verificado'}}</span>
             </div>
             <div class="d-flex justify-content-between align-items-center">
               <span class="text-secondary x-small">{{ mode() === 'external' ? 'Tipo de cuenta:' : 'Saldo destino:' }}</span>
               <span class="fw-bold small">
-                {{ mode() === 'external' ? selectedAccount.accountType : (selectedAccount.initialBalance | currency) }}
+                {{ mode() === 'external' ? selectedAccount().accountType : (selectedAccount().initialBalance | currency) }}
               </span>
             </div>
           </div>
@@ -133,9 +135,9 @@
         </div>
       </div>
 
-      <!-- Paso 2: Detalles de la Transacción -->
+      <!-- Paso 2: Detalles y Monto -->
       <div *ngIf="currentStep() === 2" class="animate-fade-in">
-        <h2 class="h5 mb-4 fw-bold">2. Detalles</h2>
+        <h2 class="h5 mb-4 fw-bold">2. Detalles del Movimiento</h2>
 
         <div class="mb-4" *ngIf="!mode()">
           <label class="text-secondary small d-block mb-2 fw-medium">Tipo de Movimiento</label>
@@ -156,13 +158,32 @@
         </div>
 
         <div class="mb-4">
-          <label class="text-secondary small d-block mb-2 fw-medium">Monto (USD)</label>
+          <label class="text-secondary small d-block mb-2 fw-medium">Monto a {{ mode() ? 'transferir' : 'procesar' }} (USD)</label>
           <div class="input-with-icon">
             <input type="number" formControlName="amount" class="form-control" placeholder="0.00"
+                   inputmode="decimal"
                    [class.is-invalid]="movementForm.get('amount')?.touched && movementForm.get('amount')?.invalid">
             <span class="material-icons">attach_money</span>
           </div>
-          <div class="invalid-feedback">Ingrese un monto válido mayor a 0.</div>
+          <div class="invalid-feedback" *ngIf="movementForm.get('amount')?.touched && movementForm.get('amount')?.invalid">
+            Ingrese un monto válido mayor a 0.
+          </div>
+        </div>
+
+        <!-- Proyección de Saldo -->
+        <div *ngIf="formAmount() > 0" class="surface-alt p-3 mb-4 animate-fade-in rounded-3 border-start border-4 border-primary">
+          <div class="d-flex justify-content-between align-items-center mb-2" *ngIf="mode() && predictedSourceBalance() !== null">
+            <span class="text-secondary small">Saldo final origen:</span>
+            <span class="fw-bold" [class.text-danger]="predictedSourceBalance()! < 0">
+              {{predictedSourceBalance() | currency}}
+            </span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center" *ngIf="predictedDestinationBalance() !== null && mode() !== 'external'">
+            <span class="text-secondary small">Saldo final {{ mode() ? 'destino' : 'actual' }}:</span>
+            <span class="fw-bold text-success">
+              {{predictedDestinationBalance() | currency}}
+            </span>
+          </div>
         </div>
 
         <div class="mb-4">
@@ -173,39 +194,39 @@
         <div class="mt-5 d-flex gap-3">
           <button type="button" class="btn btn-secondary flex-grow-1" (click)="prevStep()">
             <span class="material-icons d-lg-none" style="font-size: 18px;">arrow_back</span>
-            <span class="d-none d-lg-inline">Atrás</span>
+            <span class="d-none d-lg-inline">Anterior</span>
           </button>
           <button type="button" class="btn btn-primary flex-grow-1" (click)="nextStep()">
-            <span class="material-icons d-lg-none" style="font-size: 18px;">arrow_forward</span>
-            <span class="d-none d-lg-inline">Siguiente</span>
+            <span class="material-icons d-lg-none" style="font-size: 18px;">visibility</span>
+            <span class="d-none d-lg-inline">Revisar Confirmación</span>
           </button>
         </div>
       </div>
 
-      <!-- Paso 3: Confirmación -->
+      <!-- Paso 3: Confirmación Final -->
       <div *ngIf="currentStep() === 3" class="animate-fade-in">
-        <h2 class="h5 mb-4 fw-bold">3. Confirmación</h2>
+        <h2 class="h5 mb-4 fw-bold">3. Confirmación Final</h2>
 
         <div class="surface-alt p-4 mb-5">
           @if (mode()) {
             <div class="mb-3 d-flex justify-content-between border-bottom pb-2">
               <span class="text-secondary small">Desde</span>
-              <span class="fw-medium">{{sourceAccount?.accountNumber}}</span>
+              <span class="fw-medium">{{sourceAccount()?.accountNumber}}</span>
             </div>
             <div class="mb-3 d-flex justify-content-between border-bottom pb-2">
               <span class="text-secondary small">Para</span>
-              <span class="fw-medium">{{selectedAccount?.accountNumber}}</span>
+              <span class="fw-medium">{{selectedAccount()?.accountNumber}}</span>
             </div>
           } @else {
             <div class="mb-3 d-flex justify-content-between border-bottom pb-2">
               <span class="text-secondary small">Cuenta</span>
-              <span class="fw-medium">{{selectedAccount?.accountNumber}}</span>
+              <span class="fw-medium">{{selectedAccount()?.accountNumber}}</span>
             </div>
           }
 
-          <div class="mb-3 d-flex justify-content-between border-bottom pb-2" *ngIf="mode() === 'external' && selectedAccount?.clientName">
+          <div class="mb-3 d-flex justify-content-between border-bottom pb-2" *ngIf="mode() === 'external' && selectedAccount()?.clientName">
             <span class="text-secondary small">Titular</span>
-            <span class="fw-medium text-end">{{selectedAccount?.clientName}}</span>
+            <span class="fw-medium text-end">{{selectedAccount()?.clientName}}</span>
           </div>
 
           <div class="mb-3 d-flex justify-content-between border-bottom pb-2" *ngIf="!mode()">
@@ -222,20 +243,22 @@
         </div>
 
         <div class="mt-5 d-flex gap-3">
-          <button type="button" class="btn btn-secondary flex-grow-1" (click)="prevStep()">
-            <span class="material-icons d-lg-none" style="font-size: 18px;">edit</span>
-            <span class="d-none d-lg-inline">Revisar</span>
+          <button type="button" class="btn btn-secondary flex-grow-1" (click)="prevStep()" [disabled]="isLoading()">
+            <span class="material-icons d-lg-none" style="font-size: 18px;">arrow_back</span>
+            <span class="d-none d-lg-inline">Anterior</span>
           </button>
-          <button type="submit" class="btn btn-success flex-grow-1" [disabled]="isLoading()">
-            <span *ngIf="!isLoading()" class="d-lg-none material-icons" style="font-size: 18px;">check</span>
-            <span *ngIf="!isLoading()" class="d-none d-lg-inline">Confirmar y Procesar</span>
-            <div *ngIf="isLoading()" class="modern-loader" style="width: 20px; height: 20px; margin: 0 auto;">
-              <div class="ring" style="border-width: 1px;"></div>
-              <div class="ring" style="border-width: 1px;"></div>
-              <div class="ring" style="border-width: 1px;"></div>
-              <div class="core" style="width: 4px; height: 4px;"></div>
-            </div>
+          <button type="submit" class="btn btn-primary flex-grow-1" [disabled]="isLoading() || (mode() && (predictedSourceBalance() || 0) < 0)">
+            @if (isLoading()) {
+              <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+              <span>Procesando...</span>
+            } @else {
+              <span class="material-icons d-lg-none" style="font-size: 18px;">done</span>
+              <span class="d-none d-lg-inline">Confirmar y Enviar</span>
+            }
           </button>
+        </div>
+        <div *ngIf="mode() && (predictedSourceBalance() || 0) < 0" class="text-danger x-small mt-2 text-center animate-fade-in">
+          Error: Saldo insuficiente en la cuenta de origen.
         </div>
       </div>
 
