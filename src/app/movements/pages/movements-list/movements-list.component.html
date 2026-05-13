@@ -8,6 +8,12 @@
       </div>
       <!-- Desktop Actions -->
       <div class="d-none d-md-flex gap-3">
+        @if (isAdmin()) {
+          <button class="btn btn-outline-primary flex-column py-3 px-4" (click)="goToCreateCustomer()" title="Registrar un nuevo cliente en el sistema">
+            <span class="material-icons mb-1">person_add</span>
+            <span class="text-nowrap">Nuevo Cliente</span>
+          </button>
+        }
         <button class="btn btn-primary flex-column py-3 px-4" (click)="goToExternalTransfer()" title="Transferir dinero (cuentas externas)">
           <span class="material-icons mb-1">payments</span>
           <span class="text-nowrap">A otros <small class="opacity-50">(externas)</small></span>
@@ -21,6 +27,14 @@
 
     <!-- Mobile Quick Actions -->
     <div class="d-flex d-md-none justify-content-center gap-5 mt-3 mb-2">
+      @if (isAdmin()) {
+        <div class="d-flex flex-column align-items-center cursor-pointer" (click)="goToCreateCustomer()">
+          <div class="btn-circle-action bg-info-subtle text-info mb-2">
+            <span class="material-icons">person_add</span>
+          </div>
+          <span class="tiny-label fw-medium">Nuevo Cli.</span>
+        </div>
+      }
       <div class="d-flex flex-column align-items-center cursor-pointer" (click)="goToExternalTransfer()">
         <div class="btn-circle-action bg-primary-subtle text-primary mb-2">
           <span class="material-icons">payments</span>

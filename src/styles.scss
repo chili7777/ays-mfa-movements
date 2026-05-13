@@ -179,6 +179,14 @@ h1, h2, h3, h4, h5, h6 {
   border-color: rgba(255, 255, 255, 0.1);
 }
 
+.bg-info-subtle {
+  background-color: rgba(13, 202, 240, 0.1) !important;
+}
+
+.text-info {
+  color: #0dcaf0 !important;
+}
+
 .tiny-label {
   font-size: 11px;
   color: $theme-dark-text-secondary;

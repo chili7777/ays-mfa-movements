@@ -23,8 +23,10 @@ export class MovementsListComponent implements OnInit {
   movements = signal<Movement[]>([]);
   accounts = signal<any[]>([]);
   isLoading = signal(true);
-  userRole = signal<string>(localStorage.getItem('userRole') || 'USER');
+  userRole = signal<string>((localStorage.getItem('userRole') || 'USER').trim().toUpperCase());
   currentClientId = signal<string | null>(localStorage.getItem('clientId'));
+
+  isAdmin = computed(() => this.userRole() === 'ADMIN');
 
   // Filtros
   accountId = signal<string>('');
@@ -39,7 +41,7 @@ export class MovementsListComponent implements OnInit {
 
   filteredAccounts = computed(() => {
     const all = this.accounts();
-    if (this.userRole() !== 'ADMIN' && this.currentClientId()) {
+    if (!this.isAdmin() && this.currentClientId()) {
       return all.filter(a => a.clientId === this.currentClientId());
     }
     return all;
@@ -149,6 +151,13 @@ export class MovementsListComponent implements OnInit {
 
   goToExternalTransfer(): void {
     this.router.navigate(['/movements/create'], { queryParams: { mode: 'external' } });
+  }
+
+  goToCreateCustomer(): void {
+    // Redirigir a una ruta lógica para clientes o emitir un evento
+    // Dado que no hay ruta de clientes en este microfrontend, intentamos navegar a /customers
+    // o mostramos un mensaje si se espera que sea parte de otro módulo
+    window.location.href = '/customers/create';
   }
 
   goToInternalTransfer(): void {
