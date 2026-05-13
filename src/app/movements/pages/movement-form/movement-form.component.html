@@ -77,7 +77,7 @@
             {{ mode() ? 'Cuenta de Destino' : 'Seleccionar Cuenta' }}
           </label>
 
-          @if (mode() === 'external') {
+          @if (mode() === 'external' && !isAdmin()) {
             <div class="d-flex gap-2">
               <div class="position-relative flex-grow-1">
                 <input type="text" formControlName="externalAccountNumber"

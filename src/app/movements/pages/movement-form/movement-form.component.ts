@@ -61,10 +61,14 @@ export class MovementFormComponent implements OnInit {
   // Datos sincronizados desde el Bridge
   userRole = computed(() => (this.mfeBridge.sessionData().role || 'USER').toUpperCase());
   currentClientId = computed(() => this.mfeBridge.sessionData().clientId);
-  isAdmin = computed(() => this.userRole() === 'ADMIN');
+  isAdmin = computed(() => {
+    const role = this.userRole();
+    return role === 'ADMIN' || role === 'GESTOR' || role === 'ROOT';
+  });
 
   myAccounts = computed(() => {
     const all = this.accounts();
+    if (this.isAdmin()) return all;
     const myId = this.currentClientId();
     return all.filter(a => a.clientId === myId);
   });
@@ -74,6 +78,12 @@ export class MovementFormComponent implements OnInit {
     const mode = this.mode();
     const myId = this.currentClientId();
     const sourceId = this.movementForm.get('sourceAccountId')?.value;
+    const isAdmin = this.isAdmin();
+
+    if (isAdmin) {
+      // El admin puede transferir a cualquier cuenta (excepto la misma de origen si hay una)
+      return all.filter(a => (a.id || a.accountId) !== sourceId);
+    }
 
     if (mode === 'external') {
       // Cuentas que NO me pertenecen (Transferencia a Terceros)
@@ -84,7 +94,7 @@ export class MovementFormComponent implements OnInit {
     }
 
     // Si es USER normal y no hay modo (ej. editar), solo sus cuentas
-    if (!this.isAdmin() && myId) {
+    if (!isAdmin && myId) {
       return all.filter(a => a.clientId === myId);
     }
 
