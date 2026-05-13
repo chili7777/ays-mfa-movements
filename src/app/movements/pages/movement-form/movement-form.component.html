@@ -23,6 +23,7 @@
         } @else {
           {{ isEdit() ? 'Editar' : 'Nueva' }} Transacción
         }
+        <span class="text-secondary small ms-2" style="font-size: 14px; opacity: 0.7; font-weight: 400;">({{ userRole() }})</span>
       </h1>
       <p class="text-secondary small">
         {{ mode() === 'external' ? 'Transferir dinero a otras personas' :

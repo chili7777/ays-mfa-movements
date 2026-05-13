@@ -6,7 +6,10 @@
       <button class="btn btn-secondary btn-sm rounded-circle p-2 me-3" (click)="goBack()" style="width: 36px; height: 36px;">
         <span class="material-icons" style="font-size: 20px;">arrow_back</span>
       </button>
-      <h1 class="h5 fw-bold mb-0">Detalle de Transacción</h1>
+      <h1 class="h5 fw-bold mb-0">
+        Detalle de Transacción
+        <span class="text-secondary small ms-2" style="font-size: 14px; opacity: 0.7; font-weight: 400;">({{ userRole() }})</span>
+      </h1>
     </header>
 
     @if (loading()) {

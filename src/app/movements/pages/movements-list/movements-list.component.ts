@@ -6,6 +6,7 @@ import { MovementService } from '../../services/movement.service';
 import { Movement } from '../../interfaces/movement.interface';
 import { DateRangePickerComponent } from '../../components/date-range-picker/date-range-picker.component';
 import { AccountService } from '../../services/account.service';
+import { MfeBridgeService } from '../../../core/services/mfe-bridge.service';
 
 @Component({
   selector: 'app-movements-list',
@@ -18,13 +19,16 @@ export class MovementsListComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly movementService = inject(MovementService);
   private readonly accountService = inject(AccountService);
+  private readonly mfeBridge = inject(MfeBridgeService);
 
   // Signals para el estado
   movements = signal<Movement[]>([]);
   accounts = signal<any[]>([]);
   isLoading = signal(true);
-  userRole = signal<string>((localStorage.getItem('userRole') || 'USER').trim().toUpperCase());
-  currentClientId = signal<string | null>(localStorage.getItem('clientId'));
+
+  // Datos sincronizados desde el Bridge
+  userRole = computed(() => (this.mfeBridge.sessionData().role || 'USER').toUpperCase());
+  currentClientId = computed(() => this.mfeBridge.sessionData().clientId);
 
   isAdmin = computed(() => this.userRole() === 'ADMIN');
 
@@ -87,14 +91,7 @@ export class MovementsListComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.route.queryParams.subscribe(params => {
-      const cid = params['clientId'] || params['client'];
-      if (cid) {
-        this.currentClientId.set(cid);
-      } else {
-        this.currentClientId.set(localStorage.getItem('clientId'));
-      }
-
+    this.route.queryParams.subscribe(() => {
       this.loadInitialData();
     });
   }

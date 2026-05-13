@@ -1,9 +1,10 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MovementService } from '../../services/movement.service';
 import { AccountService } from '../../services/account.service';
+import { MfeBridgeService } from '../../../core/services/mfe-bridge.service';
 
 @Component({
   selector: 'app-movement-form',
@@ -17,6 +18,7 @@ export class MovementFormComponent implements OnInit {
   private readonly movementService = inject(MovementService);
   private readonly accountService = inject(AccountService);
   private readonly route = inject(ActivatedRoute);
+  private readonly mfeBridge = inject(MfeBridgeService);
 
   // Signals para el Wizard
   currentStep = signal(1);
@@ -27,6 +29,10 @@ export class MovementFormComponent implements OnInit {
   isEdit = signal(false);
   movementId = signal<string | null>(null);
   mode = signal<string | null>(null);
+
+  // Datos sincronizados desde el Bridge
+  userRole = computed(() => (this.mfeBridge.sessionData().role || 'USER').toUpperCase());
+  currentClientId = computed(() => this.mfeBridge.sessionData().clientId);
 
   constructor() {
     this.movementForm = this.fb.group({

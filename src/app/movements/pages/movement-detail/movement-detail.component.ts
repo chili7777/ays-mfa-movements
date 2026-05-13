@@ -1,9 +1,10 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MovementService } from '../../services/movement.service';
 import { AccountService } from '../../services/account.service';
 import { Movement } from '../../interfaces/movement.interface';
+import { MfeBridgeService } from '../../../core/services/mfe-bridge.service';
 
 @Component({
   selector: 'app-movement-detail',
@@ -16,11 +17,15 @@ export class MovementDetailComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly movementService = inject(MovementService);
   private readonly accountService = inject(AccountService);
+  private readonly mfeBridge = inject(MfeBridgeService);
 
   movement = signal<Movement | null>(null);
   account = signal<any | null>(null);
   loading = signal(true);
   errorMessage = signal<string | null>(null);
+
+  // Datos sincronizados desde el Bridge
+  userRole = computed(() => (this.mfeBridge.sessionData().role || 'USER').toUpperCase());
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
