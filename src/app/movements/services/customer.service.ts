@@ -36,4 +36,10 @@ export class CustomerService {
       })
     );
   }
+
+  getCustomerById(id: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() }).pipe(
+      map(response => response.data || response.customer || response)
+    );
+  }
 }

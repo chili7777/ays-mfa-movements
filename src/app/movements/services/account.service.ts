@@ -43,4 +43,14 @@ export class AccountService {
       map(response => response.data || response.account || response)
     );
   }
+
+  getAccountByNumber(accountNumber: string): Observable<any> {
+    const url = `${this.apiUrl}?accountNumber=${accountNumber}`;
+    return this.http.get<any>(url, { headers: this.getHeaders() }).pipe(
+      map(response => {
+        const accounts = this.mapAccountsResponse(response);
+        return accounts.length > 0 ? accounts[0] : null;
+      })
+    );
+  }
 }
