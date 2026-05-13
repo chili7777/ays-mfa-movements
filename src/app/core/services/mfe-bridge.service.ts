@@ -50,6 +50,16 @@ export class MfeBridgeService {
     window.parent.postMessage({ type: 'MFE_READY' }, '*');
   }
 
+  /**
+   * Solicita a la Shell navegar a una ruta específica con parámetros.
+   */
+  navigateTo(path: string, queryParams?: any) {
+    window.parent.postMessage({
+      type: 'MFE_NAVIGATE',
+      payload: { path, queryParams }
+    }, '*');
+  }
+
   private isTrustedOrigin(origin: string): boolean {
     return this.trustedOrigins.includes(origin) ||
            origin.endsWith('.ondigitalocean.app') ||

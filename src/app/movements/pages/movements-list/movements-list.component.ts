@@ -90,8 +90,21 @@ export class MovementsListComponent implements OnInit {
     return new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(date);
   }
 
+  constructor() {
+    effect(() => {
+      // Recargar datos cuando cambie el rol o el clientId sincronizado
+      if (this.userRole()) {
+        this.loadInitialData();
+      }
+    });
+  }
+
   ngOnInit(): void {
-    this.route.queryParams.subscribe(() => {
+    this.route.queryParams.subscribe(params => {
+      const accId = params['accountId'] || params['account'];
+      if (accId) {
+        this.accountId.set(accId);
+      }
       this.loadInitialData();
     });
   }
