@@ -34,8 +34,18 @@ export class MfeBridgeService {
 
       const { type, payload } = event.data || {};
 
-      if (type === 'SHELL_SESSION_DATA') {
-        console.log('[MFE Movements Bridge] Datos recibidos:', payload);
+      if (type === 'SHELL_SESSION_DATA' && payload) {
+        const current = this._sessionData();
+        // Solo actualizar si hay cambios reales para evitar re-ejecuciones de effects innecesarias
+        if (
+          current.role === (payload.role || 'USER') &&
+          current.clientId === (payload.clientId || null) &&
+          current.userName === (payload.userName || 'Usuario')
+        ) {
+          return;
+        }
+
+        // console.log('[MFE Movements Bridge] Datos de sesión actualizados:', payload);
         this._sessionData.set({
           role: payload.role || 'USER',
           clientId: payload.clientId || null,

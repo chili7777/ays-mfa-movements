@@ -32,10 +32,10 @@ export class MovementsListComponent implements OnInit {
   isLoading = signal(true);
 
   // Datos sincronizados desde el Bridge
-  userRole = computed(() => (this.mfeBridge.sessionData().role || 'USER').toUpperCase());
+  userRole = computed(() => this.mfeBridge.sessionData().role?.toUpperCase() || null);
   currentClientId = computed(() => this.mfeBridge.sessionData().clientId);
 
-  isAdmin = computed(() => this.userRole() === 'ADMIN');
+  isAdmin = computed(() => this.userRole() === 'ADMIN' || this.userRole() === 'GESTOR' || this.userRole() === 'ROOT');
 
   // Filtros
   accountId = signal<string>('');
@@ -123,36 +123,31 @@ export class MovementsListComponent implements OnInit {
     return new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(date);
   }
 
+  private initialLoadDone = false;
+
   constructor() {
     effect(() => {
       // Recargar datos cuando cambie el rol o el clientId sincronizado
-      if (this.userRole()) {
+      if (this.userRole() && !this.initialLoadDone) {
+        this.initialLoadDone = true;
+        if (this.isAdmin()) {
+          this.loadCustomers();
+        }
         this.loadInitialData();
       }
     });
   }
 
   ngOnInit(): void {
-    if (this.isAdmin()) {
-      this.loadCustomers();
-    }
-
     this.route.queryParams.subscribe(params => {
       const accId = params['accountId'] || params['account'] || params['uuid'];
       const clientId = params['client'] || params['clientId'];
-
-      console.log('[Movements List] QueryParams recibidos:', params, 'Filtro a aplicar (acc):', accId, '(client):', clientId);
 
       if (accId) {
         this.accountId.set(accId);
       }
       if (clientId && this.isAdmin()) {
         this.selectedClientIdFilter.set(clientId);
-      }
-
-      // Si el rol ya está cargado, disparamos la carga inicial
-      if (this.userRole()) {
-        this.loadInitialData();
       }
     });
   }
@@ -168,22 +163,17 @@ export class MovementsListComponent implements OnInit {
     const isAdmin = this.isAdmin();
     const clientId = this.currentClientId();
 
-    // Si es ADMIN cargamos todo por defecto (el filtrado por cliente será local en el dropdown de cuentas)
-    // o si hay un clientId forzado por queryParam/sesión, cargamos solo esas.
-    const obs$ = (!isAdmin && clientId)
-      ? this.accountService.getAccountsByClientId(clientId)
-      : this.accountService.getAccounts();
+    // Solo cargamos cuentas automáticamente si es USER (son pocas)
+    // Para ADMIN, las cargaremos bajo demanda o a partir de los movimientos
+    if (!isAdmin && clientId) {
+      this.accountService.getAccountsByClientId(clientId).subscribe({
+        next: (data) => this.accounts.set(data),
+        error: (err) => console.error('Error al cargar cuentas del cliente', err)
+      });
+    }
 
-    obs$.subscribe({
-      next: (data) => {
-        this.accounts.set(data);
-        this.loadMovements();
-      },
-      error: (err) => {
-        console.error('Error al cargar cuentas', err);
-        this.loadMovements();
-      }
-    });
+    // Cargar movimientos inmediatamente
+    this.loadMovements();
   }
 
   toggleFilters(): void {
@@ -197,6 +187,8 @@ export class MovementsListComponent implements OnInit {
   }
 
   loadMovements(): void {
+    if (!this.userRole()) return; // Evitar peticiones antes de sincronizar sesión
+
     this.isLoading.set(true);
 
     let currentAccountId = this.accountId();
@@ -238,11 +230,49 @@ export class MovementsListComponent implements OnInit {
       next: (data) => {
         this.movements.set(data);
         this.isLoading.set(false);
+        // Optimización: Cargar labels de cuentas que vienen en el listado
+        if (this.isAdmin()) {
+          this.loadMissingAccountLabels(data);
+        }
       },
       error: (err) => {
         console.error('Error al cargar movimientos', err);
         this.isLoading.set(false);
       }
+    });
+  }
+
+  /**
+   * Carga la información de las cuentas que aparecen en los movimientos
+   * para poder mostrar sus labels (número, tipo) sin cargar todas las cuentas.
+   */
+  private loadMissingAccountLabels(movements: Movement[]): void {
+    const uniqueAccountIds = [...new Set(movements.map(m => m.accountId))];
+    const currentAccountIds = this.accounts().map(a => a.id || a.accountId);
+
+    uniqueAccountIds.forEach(id => {
+      if (!currentAccountIds.includes(id)) {
+        this.accountService.getAccountById(id).subscribe({
+          next: (acc) => {
+            if (acc) {
+              this.accounts.update(prev => {
+                const alreadyExists = prev.some(a => (a.id === id || a.accountId === id));
+                return alreadyExists ? prev : [...prev, acc];
+              });
+            }
+          }
+        });
+      }
+    });
+  }
+
+  /**
+   * Permite cargar todas las cuentas (útil para el ADMIN cuando quiere filtrar)
+   */
+  loadAllAccounts(): void {
+    this.accountService.getAccounts().subscribe({
+      next: (data) => this.accounts.set(data),
+      error: (err) => console.error('Error al cargar todas las cuentas', err)
     });
   }
 
@@ -264,9 +294,19 @@ export class MovementsListComponent implements OnInit {
   }
 
   selectCustomerFilter(customer: Customer): void {
-    this.selectedClientIdFilter.set(customer.id || '');
+    const clientId = customer.id || '';
+    this.selectedClientIdFilter.set(clientId);
     this.showCustomerDropdown.set(false);
     this.accountId.set(''); // Reset account when client changes
+
+    // Optimización: Cargar solo las cuentas de este cliente
+    if (clientId) {
+      this.accountService.getAccountsByClientId(clientId).subscribe({
+        next: (accs) => this.accounts.set(accs),
+        error: (err) => console.error('Error al cargar cuentas del cliente seleccionado', err)
+      });
+    }
+
     this.loadMovements();
   }
 
@@ -274,6 +314,8 @@ export class MovementsListComponent implements OnInit {
     this.selectedClientIdFilter.set('');
     this.showCustomerDropdown.set(false);
     this.accountId.set('');
+    // Al limpiar filtro de cliente, reseteamos la lista de cuentas (se repoblará desde movimientos o manual)
+    this.accounts.set([]);
     this.loadMovements();
   }
 

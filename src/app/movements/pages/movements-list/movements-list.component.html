@@ -108,8 +108,11 @@
 
         <!-- Filtro Cuenta -->
         <div class="col-12 col-md-6">
-          <label class="text-secondary small d-block mb-1 fw-medium">Cuenta</label>
-          <select class="form-select" [ngModel]="accountId()" (ngModelChange)="accountId.set($event); loadMovements()">
+          <label class="text-secondary small d-block mb-1 fw-medium d-flex justify-content-between">
+            <span>Cuenta</span>
+            <span *ngIf="isAdmin() && accounts().length < 5" class="text-primary cursor-pointer fw-normal" style="font-size: 10px;" (click)="loadAllAccounts()">Cargar todas</span>
+          </label>
+          <select class="form-select" [ngModel]="accountId()" (ngModelChange)="accountId.set($event); loadMovements()" (mousedown)="loadAllAccounts()">
             <option value="">Todas las cuentas</option>
             <option *ngFor="let acc of filteredAccounts()" [value]="acc.id || acc.accountId">
               {{acc.accountNumber}} - {{acc.accountType}}
