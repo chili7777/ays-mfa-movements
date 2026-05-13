@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
@@ -6,24 +6,29 @@ import { MovementService } from '../../services/movement.service';
 import { Movement } from '../../interfaces/movement.interface';
 import { DateRangePickerComponent } from '../../components/date-range-picker/date-range-picker.component';
 import { AccountService } from '../../services/account.service';
+import { CustomerService } from '../../services/customer.service';
+import { Customer } from '../../interfaces/customer.interface';
 import { MfeBridgeService } from '../../../core/services/mfe-bridge.service';
 
 @Component({
   selector: 'app-movements-list',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule, DateRangePickerComponent],
-  templateUrl: './movements-list.component.html'
+  templateUrl: './movements-list.component.html',
+  styleUrl: './movements-list.component.scss'
 })
 export class MovementsListComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly movementService = inject(MovementService);
   private readonly accountService = inject(AccountService);
+  private readonly customerService = inject(CustomerService);
   private readonly mfeBridge = inject(MfeBridgeService);
 
   // Signals para el estado
   movements = signal<Movement[]>([]);
   accounts = signal<any[]>([]);
+  customers = signal<Customer[]>([]);
   isLoading = signal(true);
 
   // Datos sincronizados desde el Bridge
@@ -34,6 +39,10 @@ export class MovementsListComponent implements OnInit {
 
   // Filtros
   accountId = signal<string>('');
+  selectedClientIdFilter = signal<string>('');
+  customerSearchTerm = signal<string>('');
+  showCustomerDropdown = signal<boolean>(false);
+  movementType = signal<string>('');
   fromDate = signal<string>('');
   toDate = signal<string>('');
 
@@ -43,11 +52,35 @@ export class MovementsListComponent implements OnInit {
   // Movimientos filtrados (cliente-side si es necesario, pero cargamos de API)
   filteredMovements = computed(() => this.movements());
 
+  dropdownCustomers = computed(() => {
+    const term = this.customerSearchTerm().toLowerCase().trim();
+    if (!term) return this.customers();
+    return this.customers().filter(c =>
+      c.name.toLowerCase().includes(term) ||
+      c.identification.toLowerCase().includes(term)
+    );
+  });
+
+  selectedCustomerName = computed(() => {
+    const id = this.selectedClientIdFilter();
+    if (!id) return 'Todos los Clientes';
+    const customer = this.customers().find(c => c.id === id);
+    return customer ? customer.name : 'Cliente Desconocido';
+  });
+
   filteredAccounts = computed(() => {
     const all = this.accounts();
+
+    // Si es USER, solo sus cuentas
     if (!this.isAdmin() && this.currentClientId()) {
       return all.filter(a => a.clientId === this.currentClientId());
     }
+
+    // Si es ADMIN y hay filtro de cliente
+    if (this.isAdmin() && this.selectedClientIdFilter()) {
+      return all.filter(a => a.clientId === this.selectedClientIdFilter());
+    }
+
     return all;
   });
 
@@ -100,26 +133,57 @@ export class MovementsListComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    if (this.isAdmin()) {
+      this.loadCustomers();
+    }
+
     this.route.queryParams.subscribe(params => {
-      const accId = params['accountId'] || params['account'];
+      const accId = params['accountId'] || params['account'] || params['uuid'];
+      const clientId = params['client'] || params['clientId'];
+
+      console.log('[Movements List] QueryParams recibidos:', params, 'Filtro a aplicar (acc):', accId, '(client):', clientId);
+
       if (accId) {
         this.accountId.set(accId);
       }
-      this.loadInitialData();
+      if (clientId && this.isAdmin()) {
+        this.selectedClientIdFilter.set(clientId);
+      }
+
+      // Si el rol ya está cargado, disparamos la carga inicial
+      if (this.userRole()) {
+        this.loadInitialData();
+      }
+    });
+  }
+
+  loadCustomers(): void {
+    this.customerService.getCustomers().subscribe({
+      next: (data) => this.customers.set(data),
+      error: (err) => console.error('Error al cargar clientes', err)
     });
   }
 
   loadInitialData(): void {
+    const isAdmin = this.isAdmin();
     const clientId = this.currentClientId();
-    const obs$ = (clientId)
+
+    // Si es ADMIN cargamos todo por defecto (el filtrado por cliente será local en el dropdown de cuentas)
+    // o si hay un clientId forzado por queryParam/sesión, cargamos solo esas.
+    const obs$ = (!isAdmin && clientId)
       ? this.accountService.getAccountsByClientId(clientId)
       : this.accountService.getAccounts();
 
     obs$.subscribe({
-      next: (data) => this.accounts.set(data),
-      error: (err) => console.error('Error al cargar cuentas', err)
+      next: (data) => {
+        this.accounts.set(data);
+        this.loadMovements();
+      },
+      error: (err) => {
+        console.error('Error al cargar cuentas', err);
+        this.loadMovements();
+      }
     });
-    this.loadMovements();
   }
 
   toggleFilters(): void {
@@ -134,10 +198,27 @@ export class MovementsListComponent implements OnInit {
 
   loadMovements(): void {
     this.isLoading.set(true);
+
+    let currentAccountId = this.accountId();
+
+    // Seguridad: Si no es ADMIN, validar que la cuenta pertenezca al usuario
+    if (!this.isAdmin() && currentAccountId) {
+      const allowedAccounts = this.filteredAccounts();
+      const isAllowed = allowedAccounts.some(a => (a.id === currentAccountId || a.accountId === currentAccountId));
+      // No reseteamos el accountId inmediatamente si allowedAccounts está vacío,
+      // porque podría ser que todavía no han cargado las cuentas.
+      if (!isAllowed && allowedAccounts.length > 0) {
+        console.warn('[Movements List] Intento de acceso a cuenta no autorizada:', currentAccountId);
+        currentAccountId = '';
+        this.accountId.set('');
+      }
+    }
+
     const params = {
-      accountId: this.accountId() || undefined,
+      accountId: currentAccountId || undefined,
       fromDate: this.fromDate() || undefined,
-      toDate: this.toDate() || undefined
+      toDate: this.toDate() || undefined,
+      movementType: this.movementType() || undefined
     };
 
     this.movementService.getAllMovements(params).subscribe({
@@ -154,8 +235,32 @@ export class MovementsListComponent implements OnInit {
 
   clearFilters(): void {
     this.accountId.set('');
+    this.selectedClientIdFilter.set('');
+    this.movementType.set('');
     this.fromDate.set('');
     this.toDate.set('');
+    this.loadMovements();
+  }
+
+  toggleCustomerDropdown(): void {
+    if (!this.isAdmin()) return;
+    this.showCustomerDropdown.update(v => !v);
+    if (this.showCustomerDropdown()) {
+      this.customerSearchTerm.set('');
+    }
+  }
+
+  selectCustomerFilter(customer: Customer): void {
+    this.selectedClientIdFilter.set(customer.id || '');
+    this.showCustomerDropdown.set(false);
+    this.accountId.set(''); // Reset account when client changes
+    this.loadMovements();
+  }
+
+  clearCustomerFilter(): void {
+    this.selectedClientIdFilter.set('');
+    this.showCustomerDropdown.set(false);
+    this.accountId.set('');
     this.loadMovements();
   }
 

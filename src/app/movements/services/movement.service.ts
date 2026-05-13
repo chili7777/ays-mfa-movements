@@ -13,8 +13,8 @@ export class MovementService {
 
   private getHeaders(isJson = false): HttpHeaders {
     const headers: any = {
-      'X-Guid': '00000000-0000-0000-0000-000000000000',
-      'X-App': 'terminal-curl',
+      'x-guid': '550e8400-e29b-41d4-a716-446655440000',
+      'x-app': 'postman',
       'Accept': 'application/json'
     };
 
@@ -25,13 +25,14 @@ export class MovementService {
     return new HttpHeaders(headers);
   }
 
-  getAllMovements(params?: { accountId?: string, fromDate?: string, toDate?: string }): Observable<Movement[]> {
+  getAllMovements(params?: { accountId?: string, fromDate?: string, toDate?: string, movementType?: string }): Observable<Movement[]> {
     let url = this.apiUrl;
     if (params) {
       const queryParams = new URLSearchParams();
       if (params.accountId) queryParams.append('accountId', params.accountId);
       if (params.fromDate) queryParams.append('fromDate', params.fromDate);
       if (params.toDate) queryParams.append('toDate', params.toDate);
+      if (params.movementType) queryParams.append('movementType', params.movementType);
       const query = queryParams.toString();
       if (query) url += `?${query}`;
     }
