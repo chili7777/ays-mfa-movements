@@ -1,9 +1,9 @@
-import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { combineLatest, debounceTime, filter, switchMap, tap, of, catchError } from 'rxjs';
+import { combineLatest, debounceTime, filter, switchMap, tap, of, catchError, merge, map, scan } from 'rxjs';
 import { MovementService } from '../../services/movement.service';
 import { Movement } from '../../interfaces/movement.interface';
 import { DateRangePickerComponent } from '../../components/date-range-picker/date-range-picker.component';
@@ -19,7 +19,7 @@ import { MfeBridgeService } from '../../../core/services/mfe-bridge.service';
   templateUrl: './movements-list.component.html',
   styleUrl: './movements-list.component.scss'
 })
-export class MovementsListComponent implements OnInit {
+export class MovementsListComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly movementService = inject(MovementService);
@@ -51,7 +51,11 @@ export class MovementsListComponent implements OnInit {
   isDatePickerOpen = signal(false);
   isDownloadingPdf = signal(false);
 
-  // Movimientos filtrados (reactivos desde la API)
+  // Sistema de Toasts para notificaciones SSE
+  toasts = signal<{ id: number, message: string, type: string }[]>([]);
+  private toastId = 0;
+
+  // Movimientos filtrados (reactivos desde la API + SSE)
   movements = toSignal(
     combineLatest({
       accId: toObservable(this.accountId),
@@ -70,6 +74,7 @@ export class MovementsListComponent implements OnInit {
 
         // Seguridad: Si no es ADMIN y NO hay accountId seleccionado, no cargamos nada
         if (!isAdmin && !accId) {
+          this.isLoading.set(false);
           return of([]);
         }
 
@@ -80,17 +85,45 @@ export class MovementsListComponent implements OnInit {
           movementType: type || undefined
         };
 
-        return this.movementService.getAllMovements(params).pipe(
+        const initial$ = this.movementService.getAllMovements(params).pipe(
           tap(data => {
             if (isAdmin) this.loadMissingAccountLabels(data);
+            this.isLoading.set(false);
           }),
           catchError(err => {
             console.error('Error al cargar movimientos', err);
+            this.isLoading.set(false);
             return of([]);
-          })
+          }),
+          map(list => ({ type: 'INIT' as const, list }))
         );
-      }),
-      tap(() => this.isLoading.set(false))
+
+        // Si tenemos un accountId o somos ADMIN, nos suscribimos al stream
+        // NOTA: Para ADMIN, podríamos suscribirnos al flujo global si no hay accId
+        const sse$ = this.movementService.getMovementStream(accId || undefined).pipe(
+          filter(m => {
+            // Filtro básico de seguridad/conveniencia: si hay un filtro de cuenta, el evento debe coincidir
+            if (accId && m.accountId !== accId) return false;
+            // Si hay filtro de tipo, debe coincidir
+            if (type && m.movementType !== type) return false;
+            return true;
+          }),
+          tap(m => this.onRealTimeMovement(m)),
+          map(movement => ({ type: 'SSE' as const, movement }))
+        );
+
+        return merge(initial$, sse$).pipe(
+          scan((acc, val) => {
+            if (val.type === 'INIT') return val.list;
+            if (val.type === 'SSE') {
+              // Evitar duplicados si el movimiento ya fue cargado inicialmente (race condition)
+              if (acc.some(m => m.id === val.movement.id)) return acc;
+              return [val.movement, ...acc];
+            }
+            return acc;
+          }, [] as Movement[])
+        );
+      })
     ),
     { initialValue: [] }
   );
@@ -339,6 +372,39 @@ export class MovementsListComponent implements OnInit {
     if (groupDate.getTime() === today.getTime()) return 'Hoy';
     if (groupDate.getTime() === yesterday.getTime()) return 'Ayer';
     return '';
+  }
+
+  ngOnDestroy(): void {
+    // toSignal se encarga de desuscribirse automáticamente del stream SSE
+    // cuando el componente se destruye.
+  }
+
+  private onRealTimeMovement(m: Movement): void {
+    // 1. Actualizar balance en la lista de cuentas para que selectedAccount() reaccione
+    if (m.balance !== undefined) {
+      this.accounts.update(accs => accs.map(a =>
+        (a.id === m.accountId || a.accountId === m.accountId)
+          ? { ...a, balance: m.balance }
+          : a
+      ));
+    }
+
+    // 2. Mostrar Toast Informativo
+    const typeLabel = m.movementType === 'DEPOSIT' ? 'depósito' : 'retiro';
+    const amountStr = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(m.amount);
+    this.addToast(`Nuevo ${typeLabel} recibido: ${amountStr}`, 'info');
+  }
+
+  addToast(message: string, type: string = 'info'): void {
+    const id = this.toastId++;
+    this.toasts.update(t => [...t, { id, message, type }]);
+
+    // Auto-remover después de 5 segundos
+    setTimeout(() => this.removeToast(id), 5000);
+  }
+
+  removeToast(id: number): void {
+    this.toasts.update(t => t.filter(x => x.id !== id));
   }
 
   handleDownloadPdf() {

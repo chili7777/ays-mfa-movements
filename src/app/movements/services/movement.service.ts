@@ -99,4 +99,49 @@ export class MovementService {
       responseType: 'blob'
     });
   }
+
+  /**
+   * Se suscribe al flujo de movimientos en tiempo real mediante SSE.
+   * Si se proporciona accountId, se suscribe solo a los movimientos de esa cuenta.
+   * @param accountId Opcional. ID de la cuenta para filtrar el stream.
+   */
+  getMovementStream(accountId?: string): Observable<Movement> {
+    return new Observable<Movement>(observer => {
+      const baseUrl = 'https://ays-msa-dm-cuaa-cr-account-stagi-zdpms.ondigitalocean.app';
+      const url = accountId
+        ? `${baseUrl}/accounts/${accountId}/movements/stream`
+        : `${this.apiUrl}/stream`;
+
+      console.log(`[SSE] Conectando a: ${url}`);
+
+      const eventSource = new EventSource(url);
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          const movement: Movement = {
+            ...data,
+            id: data.movementId || data.id || data.transactionId
+          };
+          observer.next(movement);
+        } catch (e) {
+          console.error('[SSE] Error al parsear datos:', e);
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error('[SSE] Error de conexión:', error);
+        // EventSource maneja la reconexión automática por defecto.
+      };
+
+      eventSource.onopen = () => {
+        console.log('[SSE] Conexión abierta');
+      };
+
+      return () => {
+        console.log('[SSE] Cerrando conexión');
+        eventSource.close();
+      };
+    });
+  }
 }

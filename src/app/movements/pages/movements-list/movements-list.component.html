@@ -376,4 +376,19 @@
     (close)="isDatePickerOpen.set(false)"
     (selectRange)="onDateRangeSelected($event)">
   </app-date-range-picker>
+
+  <!-- Toasts container para notificaciones SSE -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1060;">
+    <div *ngFor="let toast of toasts()" class="toast show animate-slide-in" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header" [class.bg-info]="toast.type === 'info'">
+        <span class="material-icons me-2" style="font-size: 18px;">notifications</span>
+        <strong class="me-auto">Notificación</strong>
+        <small class="opacity-75">Ahora</small>
+        <button type="button" class="btn-close btn-close-white ms-2" (click)="removeToast(toast.id)"></button>
+      </div>
+      <div class="toast-body">
+        {{ toast.message }}
+      </div>
+    </div>
+  </div>
 </div>
