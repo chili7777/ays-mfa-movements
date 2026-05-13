@@ -8,6 +8,7 @@ import { Observable, map } from 'rxjs';
 export class AccountService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = 'https://ays-msa-dm-cuaa-cr-account-stagi-zdpms.ondigitalocean.app/accounts';
+  private readonly customerUrl = 'https://ays-msa-dm-cuaa-cr-account-stagi-zdpms.ondigitalocean.app/customers';
 
   private getHeaders(): HttpHeaders {
     return new HttpHeaders({
@@ -19,13 +20,22 @@ export class AccountService {
 
   getAccounts(): Observable<any[]> {
     return this.http.get<any>(this.apiUrl, { headers: this.getHeaders() }).pipe(
-      map(response => {
-        if (Array.isArray(response)) return response;
-        if (response && response.data && Array.isArray(response.data)) return response.data;
-        if (response && response.accounts && Array.isArray(response.accounts)) return response.accounts;
-        return [];
-      })
+      map(response => this.mapAccountsResponse(response))
     );
+  }
+
+  getAccountsByClientId(clientId: string): Observable<any[]> {
+    const url = `${this.customerUrl}/${clientId}/accounts`;
+    return this.http.get<any>(url, { headers: this.getHeaders() }).pipe(
+      map(response => this.mapAccountsResponse(response))
+    );
+  }
+
+  private mapAccountsResponse(response: any): any[] {
+    if (Array.isArray(response)) return response;
+    if (response && response.data && Array.isArray(response.data)) return response.data;
+    if (response && response.accounts && Array.isArray(response.accounts)) return response.accounts;
+    return [];
   }
 
   getAccountById(id: string): Observable<any> {

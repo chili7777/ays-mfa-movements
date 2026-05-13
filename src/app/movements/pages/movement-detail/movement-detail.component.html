@@ -1,15 +1,12 @@
-<div class="container animate-fade-in py-5 d-flex justify-content-center">
-  <div class="desktop-card w-100" style="max-width: 600px;">
+<div class="container animate-fade-in py-4 d-flex justify-content-center">
+  <div class="movement-detail-card w-100" style="max-width: 500px;">
 
-    <!-- Cabecera -->
-    <header class="d-flex align-items-center gap-3 mb-5">
-      <button class="btn btn-secondary btn-sm rounded-circle p-2" (click)="goBack()">
-        <span class="material-icons">arrow_back</span>
+    <!-- Cabecera Simple -->
+    <header class="d-flex align-items-center mb-4 px-2">
+      <button class="btn btn-secondary btn-sm rounded-circle p-2 me-3" (click)="goBack()" style="width: 36px; height: 36px;">
+        <span class="material-icons" style="font-size: 20px;">arrow_back</span>
       </button>
-      <div>
-        <h1 class="h4 fw-bold mb-0">Detalle de Transacción</h1>
-        <p class="text-secondary small mb-0">Registro histórico de movimiento</p>
-      </div>
+      <h1 class="h5 fw-bold mb-0">Detalle de Transacción</h1>
     </header>
 
     @if (loading()) {
@@ -23,68 +20,82 @@
         <p class="loading-text">Cargando detalles...</p>
       </div>
     } @else if (errorMessage()) {
-      <div class="surface text-center py-5">
+      <div class="text-center py-5">
         <span class="material-icons text-danger mb-3" style="font-size: 48px;">error_outline</span>
         <h3 class="h5 mb-2">Error de Carga</h3>
         <p class="text-secondary mb-4">{{errorMessage()}}</p>
         <button class="btn btn-primary" (click)="goBack()">
-          <span class="material-icons d-lg-none" style="font-size: 18px;">arrow_back</span>
-          <span class="d-none d-lg-inline">Volver al listado</span>
+          Volver al listado
         </button>
       </div>
     } @else if (movement(); as m) {
-      <div class="animate-fade-in">
-
-        <!-- Tarjeta Principal de Monto -->
-        <div class="surface-alt p-4 mb-4 text-center">
-          <span class="text-secondary small d-block mb-1">Monto de la Operación</span>
-          <h2 class="h1 fw-bold mb-2" [style.color]="m.movementType === 'DEPOSIT' ? 'var(--success-color)' : 'var(--error-color)'">
+      <div class="receipt-container animate-fade-in">
+        <!-- Sección de Monto Destacado -->
+        <div class="receipt-header text-center py-4">
+          <div class="movement-type-icon mx-auto mb-3" [class.deposit]="m.movementType === 'DEPOSIT'">
+            <span class="material-icons">
+              {{m.movementType === 'DEPOSIT' ? 'check_circle' : 'remove_circle'}}
+            </span>
+          </div>
+          <h2 class="display-6 fw-bold mb-1" [style.color]="m.movementType === 'DEPOSIT' ? 'var(--success-color)' : 'var(--error-color)'">
             {{m.movementType === 'DEPOSIT' ? '+' : '-'}} {{m.amount | currency}}
           </h2>
-          <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill"
-               [style.background]="m.movementType === 'DEPOSIT' ? 'rgba(0, 192, 118, 0.1)' : 'rgba(212, 16, 32, 0.1)'"
-               [style.color]="m.movementType === 'DEPOSIT' ? 'var(--success-color)' : 'var(--error-color)'">
-            <span class="status-dot" [class.active]="m.movementType === 'DEPOSIT'"></span>
-            <span class="small fw-bold">{{getTypeLabel(m.movementType)}}</span>
+          <div class="status-badge mx-auto mt-2" [class.deposit]="m.movementType === 'DEPOSIT'">
+            {{getTypeLabel(m.movementType)}} Exitosa
           </div>
         </div>
 
-        <!-- Información Detallada -->
-        <div class="surface p-4">
-          <div class="row g-4">
-            <div class="col-12 col-md-6">
-              <label class="text-secondary small d-block mb-1">Referencia de Cuenta</label>
-              <div class="fw-medium">
-                {{account()?.accountNumber || m.accountId}}
-                <span class="text-secondary small d-block">{{account()?.accountType}}</span>
+        <!-- Cuerpo del Recibo -->
+        <div class="receipt-body">
+          <div class="detail-items-container">
+            <div class="detail-item">
+              <span class="detail-label">Fecha y hora</span>
+              <div class="detail-value text-end">
+                <span class="text-capitalize d-block">{{m.movementDate | date:'EEEE, dd MMM.yyyy':'':'es-ES'}}</span>
+                <span class="text-secondary tiny-label">{{m.movementDate | date:'HH:mm:ss'}}</span>
               </div>
             </div>
-            <div class="col-12 col-md-6">
-              <label class="text-secondary small d-block mb-1">Fecha y Hora</label>
-              <div class="fw-medium text-capitalize">{{m.movementDate | date:'EEEE, dd MMM.yyyy':'':'es-ES'}}</div>
-              <div class="text-secondary small">{{m.movementDate | date:'HH:mm:ss'}}</div>
+
+            <div class="detail-item">
+              <span class="detail-label">Cuenta origen</span>
+              <div class="detail-value text-end">
+                <span class="d-block">{{account()?.accountNumber || m.accountId}}</span>
+                <span class="text-secondary tiny-label">{{account()?.accountType || 'Cuenta Corriente'}}</span>
+              </div>
             </div>
-            <div class="col-12 col-md-6">
-              <label class="text-secondary small d-block mb-1">Saldo Resultante</label>
-              <div class="fw-bold text-secondary h5 mb-0">{{m.balance | currency}}</div>
+
+            <div class="detail-item">
+              <span class="detail-label">Referencia / Concepto</span>
+              <div class="detail-value text-end">
+                <span class="d-block text-break">{{m.description || 'Transferencia bancaria'}}</span>
+              </div>
             </div>
-            <div class="col-12 col-md-6">
-              <label class="text-secondary small d-block mb-1">ID Transacción</label>
-              <div class="text-secondary small font-monospace">{{m.id}}</div>
+
+            <div class="detail-item">
+              <span class="detail-label">Saldo posterior</span>
+              <div class="detail-value text-end fw-bold">
+                {{m.balance | currency}}
+              </div>
             </div>
-            <div class="col-12 pt-2">
-              <label class="text-secondary small d-block mb-1">Concepto / Descripción</label>
-              <div class="surface-alt p-3 rounded small">
-                {{m.description || 'Sin descripción adicional para esta transacción.'}}
+
+            <div class="detail-item border-0 pb-0">
+              <span class="detail-label">ID de transacción</span>
+              <div class="detail-value text-end font-monospace text-secondary" style="font-size: 11px;">
+                {{m.id}}
               </div>
             </div>
           </div>
         </div>
 
-        <div class="mt-5 d-flex gap-3">
-          <button class="btn btn-secondary flex-grow-1" (click)="goBack()">
-            <span class="material-icons d-lg-none" style="font-size: 18px;">close</span>
-            <span class="d-none d-lg-inline">Cerrar</span>
+        <!-- Acciones Inferiores -->
+        <div class="receipt-actions mt-4">
+          <button class="btn btn-primary w-100 py-3 mb-3" (click)="goBack()">
+            <span>Entendido</span>
+          </button>
+
+          <button class="btn btn-link w-100 text-secondary d-flex align-items-center justify-content-center" (click)="goBack()">
+            <span class="material-icons me-2" style="font-size: 18px;">download</span>
+            <span>Descargar comprobante (PDF)</span>
           </button>
         </div>
       </div>

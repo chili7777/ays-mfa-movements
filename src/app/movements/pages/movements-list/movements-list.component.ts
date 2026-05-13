@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { MovementService } from '../../services/movement.service';
 import { Movement } from '../../interfaces/movement.interface';
 import { DateRangePickerComponent } from '../../components/date-range-picker/date-range-picker.component';
@@ -15,6 +15,7 @@ import { AccountService } from '../../services/account.service';
 })
 export class MovementsListComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly movementService = inject(MovementService);
   private readonly accountService = inject(AccountService);
 
@@ -22,6 +23,8 @@ export class MovementsListComponent implements OnInit {
   movements = signal<Movement[]>([]);
   accounts = signal<any[]>([]);
   isLoading = signal(true);
+  userRole = signal<string>(localStorage.getItem('userRole') || 'USER');
+  currentClientId = signal<string | null>(localStorage.getItem('clientId'));
 
   // Filtros
   accountId = signal<string>('');
@@ -33,6 +36,14 @@ export class MovementsListComponent implements OnInit {
 
   // Movimientos filtrados (cliente-side si es necesario, pero cargamos de API)
   filteredMovements = computed(() => this.movements());
+
+  filteredAccounts = computed(() => {
+    const all = this.accounts();
+    if (this.userRole() !== 'ADMIN' && this.currentClientId()) {
+      return all.filter(a => a.clientId === this.currentClientId());
+    }
+    return all;
+  });
 
   groupedMovements = computed(() => {
     const groups: { date: string, items: Movement[] }[] = [];
@@ -74,11 +85,25 @@ export class MovementsListComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadInitialData();
+    this.route.queryParams.subscribe(params => {
+      const cid = params['clientId'] || params['client'];
+      if (cid) {
+        this.currentClientId.set(cid);
+      } else {
+        this.currentClientId.set(localStorage.getItem('clientId'));
+      }
+
+      this.loadInitialData();
+    });
   }
 
   loadInitialData(): void {
-    this.accountService.getAccounts().subscribe({
+    const clientId = this.currentClientId();
+    const obs$ = (clientId)
+      ? this.accountService.getAccountsByClientId(clientId)
+      : this.accountService.getAccounts();
+
+    obs$.subscribe({
       next: (data) => this.accounts.set(data),
       error: (err) => console.error('Error al cargar cuentas', err)
     });

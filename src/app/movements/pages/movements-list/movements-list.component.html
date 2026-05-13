@@ -1,6 +1,6 @@
 <div class="container animate-fade-in">
   <!-- Cabecera -->
-  <header class="mb-4 mt-4 px-2">
+  <header class="mb-3 mt-3 px-2">
     <div class="d-flex justify-content-between align-items-center">
       <div>
         <h1 class="h3 mb-1 fw-bold">Transacciones</h1>
@@ -20,7 +20,7 @@
     </div>
 
     <!-- Mobile Quick Actions -->
-    <div class="d-flex d-md-none justify-content-center gap-5 mt-4 mb-2">
+    <div class="d-flex d-md-none justify-content-center gap-5 mt-3 mb-2">
       <div class="d-flex flex-column align-items-center cursor-pointer" (click)="goToExternalTransfer()">
         <div class="btn-circle-action bg-primary-subtle text-primary mb-2">
           <span class="material-icons">payments</span>
@@ -37,7 +37,7 @@
   </header>
 
   <!-- Filtros Rápidos / Mobile -->
-  <div class="show-mobile-only px-2 mb-4">
+  <div class="show-mobile-only px-2 mb-3">
     <div class="d-flex gap-2">
       <button class="btn btn-secondary flex-grow-1 flex-column py-2" (click)="toggleFilters()" [class.btn-primary]="isFilterVisible()">
         <span class="material-icons" style="font-size: 20px;">filter_list</span>
@@ -51,7 +51,7 @@
   </div>
 
   <!-- Panel de Filtros -->
-  <section class="filters-section mb-4 px-2" [class.hide-mobile]="!isFilterVisible()">
+  <section class="filters-section mb-3 px-2" [class.hide-mobile]="!isFilterVisible()">
     <div class="py-2">
       <div class="row g-3">
         <!-- Filtro Cuenta -->
@@ -59,7 +59,7 @@
           <label class="text-secondary small d-block mb-1 fw-medium">Cuenta</label>
           <select class="form-control" [ngModel]="accountId()" (ngModelChange)="accountId.set($event); loadMovements()">
             <option value="">Todas las cuentas</option>
-            <option *ngFor="let acc of accounts()" [value]="acc.id || acc.accountId">
+            <option *ngFor="let acc of filteredAccounts()" [value]="acc.id || acc.accountId">
               {{acc.accountNumber}} - {{acc.accountType}}
             </option>
           </select>
@@ -150,7 +150,7 @@
 
     <!-- Vista Mobile -->
     <div *ngIf="groupedMovements().length > 0" class="show-mobile-only px-2">
-      <div *ngFor="let group of groupedMovements()" class="mb-5">
+      <div *ngFor="let group of groupedMovements()" class="mb-4">
         <!-- Separador de Fecha Mobile -->
         <div class="px-3 py-2 date-separator-mobile sticky-top" style="z-index: 5; top: 0;">
           <span class="text-secondary small fw-bold text-uppercase text-capitalize letter-spacing-1">

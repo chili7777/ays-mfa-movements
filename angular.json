@@ -60,6 +60,9 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "port": 5003
+          },
           "configurations": {
             "production": {
               "buildTarget": "ays-mfa-movements:build:production"
