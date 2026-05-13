@@ -200,9 +200,11 @@ export class MovementsListComponent implements OnInit {
     this.isLoading.set(true);
 
     let currentAccountId = this.accountId();
+    const isAdmin = this.isAdmin();
+    const clientId = this.currentClientId();
 
     // Seguridad: Si no es ADMIN, validar que la cuenta pertenezca al usuario
-    if (!this.isAdmin() && currentAccountId) {
+    if (!isAdmin && currentAccountId) {
       const allowedAccounts = this.filteredAccounts();
       const isAllowed = allowedAccounts.some(a => (a.id === currentAccountId || a.accountId === currentAccountId));
       // No reseteamos el accountId inmediatamente si allowedAccounts está vacío,
@@ -214,8 +216,21 @@ export class MovementsListComponent implements OnInit {
       }
     }
 
+    // Seguridad adicional: Si no es ADMIN y NO hay accountId seleccionado,
+    // forzar el filtrado por todas las cuentas del cliente en lugar de traer "todo".
+    // Esto previene que si la API getAllMovements sin accountId trae de todos, el cliente vea otros.
+    let accountIdsFilter: string | undefined = currentAccountId || undefined;
+
+    if (!isAdmin && !accountIdsFilter && clientId) {
+      const myAccounts = this.filteredAccounts();
+      if (myAccounts.length > 0) {
+        accountIdsFilter = myAccounts.map(a => a.id || a.accountId).join(',');
+        console.log('[Movements List] Aplicando filtro de seguridad para USER:', accountIdsFilter);
+      }
+    }
+
     const params = {
-      accountId: currentAccountId || undefined,
+      accountId: accountIdsFilter,
       fromDate: this.fromDate() || undefined,
       toDate: this.toDate() || undefined,
       movementType: this.movementType() || undefined

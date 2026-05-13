@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MovementService } from '../../services/movement.service';
 import { AccountService } from '../../services/account.service';
@@ -15,6 +15,7 @@ import { MfeBridgeService } from '../../../core/services/mfe-bridge.service';
 export class MovementDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly movementService = inject(MovementService);
   private readonly accountService = inject(AccountService);
   private readonly mfeBridge = inject(MfeBridgeService);
@@ -65,7 +66,8 @@ export class MovementDetailComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/movements']);
+    // Intentamos volver atrás preservando el estado del historial
+    this.location.back();
   }
 
   getTypeLabel(type: string | undefined): string {
