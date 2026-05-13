@@ -1,0 +1,176 @@
+.filters-section {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 1.5rem !important;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .filter-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    min-height: 32px;
+    color: var(--text-secondary);
+  }
+
+  .ls-1 {
+    letter-spacing: 1.5px;
+  }
+}
+
+.custom-select-container {
+  position: relative;
+  z-index: 1001;
+
+  .selected-value-box {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 48px;
+    border-radius: 12px;
+    background: rgba(30, 35, 41, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0 1.25rem;
+
+    &:hover {
+      background: rgba(30, 35, 41, 0.4);
+      border-color: var(--accent-color);
+    }
+  }
+}
+
+.dropdown-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: #1e2329;
+  border: 1px solid rgba(43, 49, 57, 0.8);
+  border-radius: 8px;
+  margin-top: 4px;
+  z-index: 1001;
+  overflow: hidden;
+
+  .search-container {
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(43, 49, 57, 0.5);
+
+    .form-control-sm {
+      background: transparent;
+      border: none;
+      font-size: 0.85rem;
+      border-radius: 0;
+      color: white;
+
+      &:focus {
+        background: transparent;
+        box-shadow: none;
+      }
+    }
+  }
+
+  .options-list {
+    max-height: 250px;
+    overflow-y: auto;
+
+    .option-item {
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+      }
+
+      &.active {
+        background-color: rgba(0, 92, 230, 0.1);
+        border-left: 3px solid var(--accent-color);
+      }
+    }
+  }
+}
+
+.dropdown-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  background: transparent;
+}
+
+.btn-clear-filters {
+  background: rgba(88, 166, 255, 0.1);
+  color: var(--accent-light);
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(88, 166, 255, 0.2);
+    border-color: var(--accent-light);
+    color: white;
+  }
+}
+
+.form-control, .form-select {
+  background-color: rgba(30, 35, 41, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  min-height: 48px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+
+  &:focus {
+    background-color: rgba(30, 35, 41, 0.4);
+    border-color: var(--accent-color);
+    color: white;
+    box-shadow: none;
+  }
+}
+
+.type-badge {
+  font-size: 0.75rem;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  background: rgba(212, 16, 32, 0.1);
+  color: var(--error-color);
+
+  &.deposit {
+    background: rgba(40, 167, 69, 0.1);
+    color: var(--success-color);
+  }
+}
+
+.time-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  opacity: 0.8;
+
+  .material-icons {
+    font-size: 14px;
+  }
+}
+
+.movement-row {
+  transition: background-color 0.2s ease;
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+  }
+}

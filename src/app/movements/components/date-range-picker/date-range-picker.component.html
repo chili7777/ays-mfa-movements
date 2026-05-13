@@ -1,0 +1,41 @@
+<div class="date-picker-overlay" [class.open]="isOpen" (click)="onClose()">
+  <div class="date-picker-modal" (click)="$event.stopPropagation()">
+    <header class="date-picker-header">
+      <button class="btn-back" (click)="onClose()">
+        <span class="material-icons">arrow_back</span>
+      </button>
+      <h2 class="title-centered">Filtro de movimientos</h2>
+      <div class="spacer"></div>
+    </header>
+
+    <div class="calendar-scroll-container">
+      <div *ngFor="let month of months" class="calendar-month mb-4">
+        <h3 class="month-label px-3">{{ month.label }}</h3>
+        <div class="calendar-grid">
+          <div *ngFor="let day of weekDays" class="calendar-day-header">{{ day }}</div>
+          <div *ngFor="let empty of month.padding" class="calendar-day empty"></div>
+          <div *ngFor="let date of month.days"
+               class="calendar-day"
+               [class.selected]="isSelected(date)"
+               [class.in-range]="isInRange(date)"
+               [class.range-start]="isStart(date)"
+               [class.range-end]="isEnd(date)"
+               [class.today]="isToday(date)"
+               [class.future]="isFuture(date)"
+               (click)="onDateClick(date)">
+            <span class="day-text">{{ date.getDate() }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-3 footer-actions">
+      <div class="range-summary-footer mb-3">
+        {{ rangeSummary }}
+      </div>
+      <button class="btn btn-apply-premium" (click)="applySelection()" [disabled]="!tempFromDate || !tempToDate">
+        Ver movimientos
+      </button>
+    </div>
+  </div>
+</div>

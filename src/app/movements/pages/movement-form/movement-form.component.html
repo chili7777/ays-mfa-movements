@@ -1,0 +1,267 @@
+<div class="container animate-fade-in d-flex flex-column align-items-center justify-content-center min-vh-100 py-5">
+  <div class="desktop-card w-100" style="max-width: 500px;">
+
+    <!-- Cabecera -->
+    <header class="text-center mb-5">
+      <div class="mb-3">
+        <span class="material-icons p-3 rounded-circle"
+              style="background: rgba(0, 92, 230, 0.1); color: var(--accent-color); font-size: 32px;">
+          @if (mode() === 'external') {
+            payments
+          } @else if (mode() === 'internal') {
+            sync_alt
+          } @else {
+            swap_horiz
+          }
+        </span>
+      </div>
+      <h1 class="h3 fw-bold mb-1">
+        @if (mode() === 'external') {
+          Transferencia a Terceros
+        } @else if (mode() === 'internal') {
+          Transferencia entre Cuentas
+        } @else {
+          {{ isEdit() ? 'Editar' : 'Nueva' }} Transacción
+        }
+        <span class="text-secondary small ms-2" style="font-size: 14px; opacity: 0.7; font-weight: 400;">({{ userRole() }})</span>
+      </h1>
+      <p class="text-secondary small">
+        {{ mode() === 'external' ? 'Transferir dinero a otras personas' :
+           mode() === 'internal' ? 'Mover dinero entre sus propias cuentas' :
+           'Complete los pasos para procesar el movimiento' }}
+      </p>
+    </header>
+
+    <!-- Stepper Dots -->
+    <div class="d-flex justify-content-center gap-2 mb-5">
+      <div class="stepper-dot" [class.active]="currentStep() === 1" [class.completed]="currentStep() > 1"></div>
+      <div class="stepper-dot" [class.active]="currentStep() === 2" [class.completed]="currentStep() > 2"></div>
+      <div class="stepper-dot" [class.active]="currentStep() === 3"></div>
+    </div>
+
+    <form [formGroup]="movementForm" (ngSubmit)="onSubmit()">
+
+      <!-- Paso 1: Selección de Cuentas -->
+      <div *ngIf="currentStep() === 1" class="animate-fade-in">
+        <h2 class="h5 mb-4 fw-bold">1. Selección de Cuentas</h2>
+
+        <!-- Cuenta de Origen (Solo si es transferencia) -->
+        <div class="mb-4" *ngIf="mode()">
+          <label class="text-secondary small d-block mb-2 fw-medium">Cuenta de Origen</label>
+          <select formControlName="sourceAccountId" class="form-control"
+                  [class.is-invalid]="movementForm.get('sourceAccountId')?.touched && movementForm.get('sourceAccountId')?.invalid">
+            <option value="" disabled selected>Seleccione cuenta de origen...</option>
+            <option *ngFor="let acc of myAccounts()" [value]="acc.id || acc.accountId">
+              {{acc.accountNumber}} - {{acc.accountType}} ({{acc.initialBalance | currency}})
+            </option>
+          </select>
+          <div class="invalid-feedback" *ngIf="movementForm.get('sourceAccountId')?.touched && movementForm.get('sourceAccountId')?.invalid">
+            Debe seleccionar la cuenta desde la cual se enviará el dinero.
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="text-secondary small d-block mb-2 fw-medium">
+            {{ mode() ? 'Cuenta de Destino' : 'Seleccionar Cuenta' }}
+          </label>
+
+          @if (mode() === 'external') {
+            <div class="d-flex gap-2">
+              <div class="position-relative flex-grow-1">
+                <input type="text" formControlName="externalAccountNumber"
+                       class="form-control" placeholder="Número de cuenta..."
+                       inputmode="numeric"
+                       (keyup.enter)="searchExternalAccount()"
+                       [class.is-invalid]="accountSearchError()">
+                <div *ngIf="accountSearchError()" class="invalid-feedback">{{accountSearchError()}}</div>
+              </div>
+              <button type="button" class="btn btn-primary d-flex align-items-center justify-content-center"
+                      style="min-width: 48px; height: 48px;"
+                      (click)="searchExternalAccount()" [disabled]="isSearchingAccount()">
+                <span *ngIf="!isSearchingAccount()" class="material-icons">search</span>
+                <div *ngIf="isSearchingAccount()" class="spinner-border spinner-border-sm" role="status"></div>
+              </button>
+            </div>
+            <div *ngIf="!externalAccount() && !accountSearchError()" class="text-secondary small mt-1">
+              Ingrese el número de cuenta y presione buscar para validar.
+            </div>
+          } @else {
+            <select formControlName="accountId" class="form-control" [class.is-invalid]="movementForm.get('accountId')?.touched && movementForm.get('accountId')?.invalid">
+              <option value="" disabled selected>Seleccione una cuenta...</option>
+              <option *ngFor="let acc of filteredAccounts()" [value]="acc.id || acc.accountId">
+                {{acc.accountNumber}} - {{acc.accountType}}
+              </option>
+            </select>
+            <div class="invalid-feedback" *ngIf="movementForm.get('accountId')?.touched && movementForm.get('accountId')?.invalid">
+              Debe seleccionar una cuenta válida.
+            </div>
+          }
+        </div>
+
+        <!-- Información de cuenta seleccionada -->
+        <div *ngIf="selectedAccount() || sourceAccount()" class="surface-alt p-3 mb-4 animate-fade-in rounded-3">
+          <!-- Detalle de Origen -->
+          <div *ngIf="mode() && sourceAccount()" class="mb-2 border-bottom pb-2">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="text-secondary x-small">Saldo en cuenta origen:</span>
+              <span class="fw-bold small text-primary">{{sourceAccount().initialBalance | currency}}</span>
+            </div>
+          </div>
+
+          <!-- Detalle de Destino -->
+          <div *ngIf="selectedAccount()">
+            <div class="d-flex justify-content-between align-items-center mb-1" *ngIf="mode() === 'external'">
+              <span class="text-secondary x-small">Titular:</span>
+              <span class="fw-bold small">{{selectedAccount().clientName || 'Verificado'}}</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-secondary x-small">{{ mode() === 'external' ? 'Tipo de cuenta:' : 'Saldo destino:' }}</span>
+              <span class="fw-bold small">
+                {{ mode() === 'external' ? selectedAccount().accountType : (selectedAccount().initialBalance | currency) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5 d-flex gap-3">
+          <button type="button" class="btn btn-secondary flex-grow-1" (click)="goBack()">
+            <span class="material-icons d-lg-none" style="font-size: 18px;">close</span>
+            <span class="d-none d-lg-inline">Cancelar</span>
+          </button>
+          <button type="button" class="btn btn-primary flex-grow-1" (click)="nextStep()">
+            <span class="material-icons d-lg-none" style="font-size: 18px;">arrow_forward</span>
+            <span class="d-none d-lg-inline">Siguiente</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Paso 2: Detalles y Monto -->
+      <div *ngIf="currentStep() === 2" class="animate-fade-in">
+        <h2 class="h5 mb-4 fw-bold">2. Detalles del Movimiento</h2>
+
+        <div class="mb-4" *ngIf="!mode()">
+          <label class="text-secondary small d-block mb-2 fw-medium">Tipo de Movimiento</label>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn flex-grow-1"
+                    [class.btn-primary]="movementForm.get('movementType')?.value === 'DEPOSIT'"
+                    [class.btn-secondary]="movementForm.get('movementType')?.value !== 'DEPOSIT'"
+                    (click)="movementForm.get('movementType')?.setValue('DEPOSIT')">
+              Depósito
+            </button>
+            <button type="button" class="btn flex-grow-1"
+                    [class.btn-primary]="movementForm.get('movementType')?.value === 'WITHDRAWAL'"
+                    [class.btn-secondary]="movementForm.get('movementType')?.value !== 'WITHDRAWAL'"
+                    (click)="movementForm.get('movementType')?.setValue('WITHDRAWAL')">
+              Retiro
+            </button>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="text-secondary small d-block mb-2 fw-medium">Monto a {{ mode() ? 'transferir' : 'procesar' }} (USD)</label>
+          <div class="input-with-icon">
+            <input type="number" formControlName="amount" class="form-control" placeholder="0.00"
+                   inputmode="decimal"
+                   [class.is-invalid]="movementForm.get('amount')?.touched && movementForm.get('amount')?.invalid">
+            <span class="material-icons">attach_money</span>
+          </div>
+          <div class="invalid-feedback" *ngIf="movementForm.get('amount')?.touched && movementForm.get('amount')?.invalid">
+            Ingrese un monto válido mayor a 0.
+          </div>
+        </div>
+
+        <!-- Proyección de Saldo -->
+        <div *ngIf="formAmount() > 0" class="surface-alt p-3 mb-4 animate-fade-in rounded-3 border-start border-4 border-primary">
+          <div class="d-flex justify-content-between align-items-center mb-2" *ngIf="mode() && predictedSourceBalance() !== null">
+            <span class="text-secondary small">Saldo final origen:</span>
+            <span class="fw-bold" [class.text-danger]="predictedSourceBalance()! < 0">
+              {{predictedSourceBalance() | currency}}
+            </span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center" *ngIf="predictedDestinationBalance() !== null && mode() !== 'external'">
+            <span class="text-secondary small">Saldo final {{ mode() ? 'destino' : 'actual' }}:</span>
+            <span class="fw-bold text-success">
+              {{predictedDestinationBalance() | currency}}
+            </span>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="text-secondary small d-block mb-2 fw-medium">Descripción (Opcional)</label>
+          <input type="text" formControlName="description" class="form-control" placeholder="Ej: Pago de servicios...">
+        </div>
+
+        <div class="mt-5 d-flex gap-3">
+          <button type="button" class="btn btn-secondary flex-grow-1" (click)="prevStep()">
+            <span class="material-icons d-lg-none" style="font-size: 18px;">arrow_back</span>
+            <span class="d-none d-lg-inline">Anterior</span>
+          </button>
+          <button type="button" class="btn btn-primary flex-grow-1" (click)="nextStep()">
+            <span class="material-icons d-lg-none" style="font-size: 18px;">visibility</span>
+            <span class="d-none d-lg-inline">Revisar Confirmación</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Paso 3: Confirmación Final -->
+      <div *ngIf="currentStep() === 3" class="animate-fade-in">
+        <h2 class="h5 mb-4 fw-bold">3. Confirmación Final</h2>
+
+        <div class="surface-alt p-4 mb-5">
+          @if (mode()) {
+            <div class="mb-3 d-flex justify-content-between border-bottom pb-2">
+              <span class="text-secondary small">Desde</span>
+              <span class="fw-medium">{{sourceAccount()?.accountNumber}}</span>
+            </div>
+            <div class="mb-3 d-flex justify-content-between border-bottom pb-2">
+              <span class="text-secondary small">Para</span>
+              <span class="fw-medium">{{selectedAccount()?.accountNumber}}</span>
+            </div>
+          } @else {
+            <div class="mb-3 d-flex justify-content-between border-bottom pb-2">
+              <span class="text-secondary small">Cuenta</span>
+              <span class="fw-medium">{{selectedAccount()?.accountNumber}}</span>
+            </div>
+          }
+
+          <div class="mb-3 d-flex justify-content-between border-bottom pb-2" *ngIf="mode() === 'external' && selectedAccount()?.clientName">
+            <span class="text-secondary small">Titular</span>
+            <span class="fw-medium text-end">{{selectedAccount()?.clientName}}</span>
+          </div>
+
+          <div class="mb-3 d-flex justify-content-between border-bottom pb-2" *ngIf="!mode()">
+            <span class="text-secondary small">Operación</span>
+            <span class="fw-bold" [style.color]="movementForm.get('movementType')?.value === 'DEPOSIT' ? 'var(--success-color)' : 'var(--error-color)'">
+              {{movementForm.get('movementType')?.value === 'DEPOSIT' ? 'Depósito' : 'Retiro'}}
+            </span>
+          </div>
+
+          <div class="mb-0 d-flex justify-content-between">
+            <span class="text-secondary small">Monto {{ mode() ? 'a transferir' : 'Total' }}</span>
+            <span class="fw-bold h4 mb-0">{{movementForm.get('amount')?.value | currency}}</span>
+          </div>
+        </div>
+
+        <div class="mt-5 d-flex gap-3">
+          <button type="button" class="btn btn-secondary flex-grow-1" (click)="prevStep()" [disabled]="isLoading()">
+            <span class="material-icons d-lg-none" style="font-size: 18px;">arrow_back</span>
+            <span class="d-none d-lg-inline">Anterior</span>
+          </button>
+          <button type="submit" class="btn btn-primary flex-grow-1" [disabled]="isLoading() || (mode() && (predictedSourceBalance() || 0) < 0)">
+            @if (isLoading()) {
+              <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+              <span>Procesando...</span>
+            } @else {
+              <span class="material-icons d-lg-none" style="font-size: 18px;">done</span>
+              <span class="d-none d-lg-inline">Confirmar y Enviar</span>
+            }
+          </button>
+        </div>
+        <div *ngIf="mode() && (predictedSourceBalance() || 0) < 0" class="text-danger x-small mt-2 text-center animate-fade-in">
+          Error: Saldo insuficiente en la cuenta de origen.
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>

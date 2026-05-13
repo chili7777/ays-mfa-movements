@@ -1,0 +1,26 @@
+# Dependencies
+node_modules
+# Build output
+dist
+.tmp
+tmp
+# VCS and editor files
+.git
+.gitignore
+.vscode
+.idea
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+# Documentation and guides not needed for image build context
+microfrontend-guides
+# OS files
+.DS_Store
+Thumbs.db
