@@ -144,10 +144,20 @@
     </div>
   </section>
 
-  <!-- Para USER solo mostramos el Calendario y Tipo si se desea, o nada según el prompt -->
-  <section class="filters-section mb-3 px-2" *ngIf="!isAdmin() && isFilterVisible()">
+  <!-- Para USER mostramos filtros simplificados pero incluyendo Cuenta (requerido para activar vista) -->
+  <section class="filters-section mb-3 px-2" [class.hide-mobile]="!isFilterVisible()" *ngIf="!isAdmin()">
      <div class="row g-3">
-        <div class="col-12 col-md-6">
+        <!-- Filtro Cuenta para USER -->
+        <div class="col-12 col-md-4">
+          <label class="text-secondary small d-block mb-1 fw-medium">Selecciona tu Cuenta</label>
+          <select class="form-select" [ngModel]="accountId()" (ngModelChange)="accountId.set($event); loadMovements()">
+            <option value="">Selecciona una cuenta...</option>
+            <option *ngFor="let acc of filteredAccounts()" [value]="acc.id || acc.accountId">
+              {{acc.accountNumber}} - {{acc.accountType}}
+            </option>
+          </select>
+        </div>
+        <div class="col-12 col-md-4">
           <label class="text-secondary small d-block mb-1 fw-medium">Tipo</label>
           <select class="form-select" [ngModel]="movementType()" (ngModelChange)="movementType.set($event); loadMovements()">
             <option value="">Todos</option>
@@ -155,7 +165,7 @@
             <option value="WITHDRAWAL">Retiros</option>
           </select>
         </div>
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-4">
           <label class="text-secondary small d-block mb-1 fw-medium">Período</label>
           <button class="form-control text-start d-flex justify-content-between align-items-center" (click)="isDatePickerOpen.set(true)">
             <span>{{ dateRangeLabel() }}</span>
@@ -279,18 +289,33 @@
     <!-- Empty State -->
     <div *ngIf="filteredMovements().length === 0" class="empty-state mt-2">
       <div class="empty-icon-container">
-        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg *ngIf="!(!isAdmin() && !accountId())" width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M19 8.5V17C19 18.1046 18.1046 19 17 19H7C5.89543 19 5 18.1046 5 17V7C5 5.89543 5.89543 5 7 5H13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="color: var(--accent-color)"/>
           <path d="M19 8.5L13.5 3M19 8.5H13.5V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-color)"/>
           <path d="M9 12H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="opacity: 0.3"/>
           <path d="M9 15H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="opacity: 0.3"/>
         </svg>
+        <span *ngIf="!isAdmin() && !accountId()" class="material-icons" style="font-size: 60px; color: var(--accent-color);">account_balance_wallet</span>
       </div>
-      <h3>Sin transacciones</h3>
-      <p>No se encontraron movimientos registrados con estos criterios.</p>
-      <button class="btn btn-primary mt-4" (click)="clearFilters()">
-        Ver todo el historial
-      </button>
+
+      <ng-container *ngIf="!isAdmin() && !accountId(); else noMovements">
+        <h3>Consulta tus movimientos</h3>
+        <p>Selecciona una de tus cuentas arriba para ver el historial de transacciones.</p>
+        <button class="btn btn-primary mt-3 px-4 py-2" (click)="toggleFilters()" *ngIf="!isFilterVisible()">
+          Abrir Filtros
+        </button>
+      </ng-container>
+
+      <ng-template #noMovements>
+        <h3>Sin transacciones</h3>
+        <p>No se encontraron movimientos registrados con estos criterios.</p>
+        <button class="btn btn-primary mt-4" (click)="clearFilters()" *ngIf="isAdmin()">
+          Ver todo el historial
+        </button>
+        <button class="btn btn-outline-secondary mt-3" (click)="clearFilters()" *ngIf="!isAdmin()">
+          Limpiar filtros
+        </button>
+      </ng-template>
     </div>
   </section>
 

@@ -217,17 +217,15 @@ export class MovementsListComponent implements OnInit {
     }
 
     // Seguridad adicional: Si no es ADMIN y NO hay accountId seleccionado,
-    // forzar el filtrado por todas las cuentas del cliente en lugar de traer "todo".
-    // Esto previene que si la API getAllMovements sin accountId trae de todos, el cliente vea otros.
-    let accountIdsFilter: string | undefined = currentAccountId || undefined;
-
-    if (!isAdmin && !accountIdsFilter && clientId) {
-      const myAccounts = this.filteredAccounts();
-      if (myAccounts.length > 0) {
-        accountIdsFilter = myAccounts.map(a => a.id || a.accountId).join(',');
-        console.log('[Movements List] Aplicando filtro de seguridad para USER:', accountIdsFilter);
-      }
+    // NO cargamos nada por defecto (según requerimiento: solo activarse cuando selecciona una cuenta)
+    if (!isAdmin && !currentAccountId) {
+      console.log('[Movements List] USER no ha seleccionado cuenta. No se cargan movimientos.');
+      this.movements.set([]);
+      this.isLoading.set(false);
+      return;
     }
+
+    let accountIdsFilter: string | undefined = currentAccountId || undefined;
 
     const params = {
       accountId: accountIdsFilter,
