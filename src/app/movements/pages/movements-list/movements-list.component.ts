@@ -130,11 +130,6 @@ export class MovementsListComponent implements OnInit, OnDestroy {
 
   filteredMovements = computed(() => this.movements());
 
-  selectedAccount = computed(() => {
-    const id = this.accountId();
-    if (!id) return null;
-    return this.accounts().find(a => a.id === id || a.accountId === id) || null;
-  });
 
   dropdownCustomers = computed(() => {
     const term = this.customerSearchTerm().toLowerCase().trim();
@@ -151,6 +146,7 @@ export class MovementsListComponent implements OnInit, OnDestroy {
     const customer = this.customers().find(c => c.id === id);
     return customer ? customer.name : 'Cliente Desconocido';
   });
+
 
   filteredAccounts = computed(() => {
     const all = this.accounts();
@@ -380,7 +376,7 @@ export class MovementsListComponent implements OnInit, OnDestroy {
   }
 
   private onRealTimeMovement(m: Movement): void {
-    // 1. Actualizar balance en la lista de cuentas para que selectedAccount() reaccione
+    // 1. Actualizar balance en la lista de cuentas para que la UI reaccione
     if (m.balance !== undefined) {
       this.accounts.update(accs => accs.map(a =>
         (a.id === m.accountId || a.accountId === m.accountId)
