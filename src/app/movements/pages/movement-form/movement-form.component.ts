@@ -9,6 +9,7 @@ import { AccountService } from '../../services/account.service';
 import { CustomerService } from '../../services/customer.service';
 import { MfeBridgeService } from '../../../core/services/mfe-bridge.service';
 import { Location } from '@angular/common';
+import { mapBackendErrorsToForm } from '../../../core/utils/form-error-mapper';
 
 @Component({
   selector: 'app-movement-form',
@@ -325,25 +326,19 @@ export class MovementFormComponent implements OnInit {
     this.isLoading.set(false);
     console.error(defaultMsg, err);
 
+    // Mapear errores de validación a los campos del formulario
+    mapBackendErrorsToForm(err, this.movementForm);
+
     const detail = err.error?.detail;
-    let message = '';
-
-    if (detail === 'Cupo diario excedido') {
-      message = 'Has alcanzado el límite diario de retiros ($1,000). Por favor, intenta con un monto menor o espera a mañana.';
-    } else if (detail === 'Saldo no disponible') {
-      message = 'No es posible realizar la transacción. Tu saldo disponible es insuficiente.';
-    } else {
-      message = detail || err.error?.message || defaultMsg;
+    if (detail) {
+      this.errorMessage.set(detail);
+      // Auto-cerrar el error después de 8 segundos
+      setTimeout(() => {
+        if (this.errorMessage() === detail) {
+          this.errorMessage.set(null);
+        }
+      }, 8000);
     }
-
-    this.errorMessage.set(message);
-
-    // Auto-cerrar el error después de 8 segundos
-    setTimeout(() => {
-      if (this.errorMessage() === message) {
-        this.errorMessage.set(null);
-      }
-    }, 8000);
   }
 
   goBack(): void {

@@ -67,7 +67,8 @@
             </option>
           </select>
           <div class="invalid-feedback" *ngIf="movementForm.get('sourceAccountId')?.touched && movementForm.get('sourceAccountId')?.invalid">
-            Debe seleccionar la cuenta desde la cual se enviará el dinero.
+            <span *ngIf="movementForm.get('sourceAccountId')?.hasError('required')">Debe seleccionar la cuenta desde la cual se enviará el dinero.</span>
+            <span *ngIf="movementForm.get('sourceAccountId')?.hasError('backendError')">{{ movementForm.get('sourceAccountId')?.getError('backendError') }}</span>
           </div>
         </div>
 
@@ -104,7 +105,8 @@
               </option>
             </select>
             <div class="invalid-feedback" *ngIf="movementForm.get('accountId')?.touched && movementForm.get('accountId')?.invalid">
-              Debe seleccionar una cuenta válida.
+              <span *ngIf="movementForm.get('accountId')?.hasError('required')">Debe seleccionar una cuenta válida.</span>
+              <span *ngIf="movementForm.get('accountId')?.hasError('backendError')">{{ movementForm.get('accountId')?.getError('backendError') }}</span>
             </div>
           }
         </div>
@@ -177,7 +179,8 @@
             <span class="material-icons">attach_money</span>
           </div>
           <div class="invalid-feedback" *ngIf="movementForm.get('amount')?.touched && movementForm.get('amount')?.invalid">
-            Ingrese un monto válido mayor a 0.
+            <span *ngIf="movementForm.get('amount')?.hasError('required') || movementForm.get('amount')?.hasError('min')">Ingrese un monto válido mayor a 0.</span>
+            <span *ngIf="movementForm.get('amount')?.hasError('backendError')">{{ movementForm.get('amount')?.getError('backendError') }}</span>
           </div>
         </div>
 

@@ -70,6 +70,14 @@ export class MfeBridgeService {
     }, '*');
   }
 
+  /**
+   * Solicita a la Shell cerrar la sesión del usuario.
+   */
+  logout() {
+    console.log('[MFE Movements Bridge] Solicitando Logout a la Shell');
+    window.parent.postMessage({ type: 'SHELL_LOGOUT' }, '*');
+  }
+
   private isTrustedOrigin(origin: string): boolean {
     return this.trustedOrigins.includes(origin) ||
            origin.endsWith('.ondigitalocean.app') ||
