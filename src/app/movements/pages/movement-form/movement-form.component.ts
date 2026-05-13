@@ -55,6 +55,7 @@ export class MovementFormComponent implements OnInit {
   externalAccount = signal<any | null>(null);
   isSearchingAccount = signal(false);
   accountSearchError = signal<string | null>(null);
+  errorMessage = signal<string | null>(null);
 
   // Datos sincronizados desde el Bridge
   userRole = computed(() => (this.mfeBridge.sessionData().role || 'USER').toUpperCase());
@@ -290,13 +291,11 @@ export class MovementFormComponent implements OnInit {
       forkJoin([withdrawal, deposit]).subscribe({
         next: () => {
           this.isLoading.set(false);
+          // Notificar al Shell/Cuentas para refrescar saldos
+          window.dispatchEvent(new CustomEvent('refresh-balances'));
           this.goBack();
         },
-        error: (err) => {
-          this.isLoading.set(false);
-          console.error('Error en transferencia', err);
-          alert('Error al procesar la transferencia. Verifique el saldo de la cuenta de origen.');
-        }
+        error: (err) => this.handleError(err, 'Error al procesar la transferencia. Verifique el saldo de la cuenta de origen.')
       });
 
     } else {
@@ -313,15 +312,38 @@ export class MovementFormComponent implements OnInit {
       request.subscribe({
         next: () => {
           this.isLoading.set(false);
+          // Notificar al Shell/Cuentas para refrescar saldos
+          window.dispatchEvent(new CustomEvent('refresh-balances'));
           this.goBack();
         },
-        error: (err) => {
-          this.isLoading.set(false);
-          console.error('Error al procesar movimiento', err);
-          alert('Error al procesar la transacción.');
-        }
+        error: (err) => this.handleError(err, 'Error al procesar la transacción.')
       });
     }
+  }
+
+  private handleError(err: any, defaultMsg: string): void {
+    this.isLoading.set(false);
+    console.error(defaultMsg, err);
+
+    const detail = err.error?.detail;
+    let message = '';
+
+    if (detail === 'Cupo diario excedido') {
+      message = 'Has alcanzado el límite diario de retiros ($1,000). Por favor, intenta con un monto menor o espera a mañana.';
+    } else if (detail === 'Saldo no disponible') {
+      message = 'No es posible realizar la transacción. Tu saldo disponible es insuficiente.';
+    } else {
+      message = detail || err.error?.message || defaultMsg;
+    }
+
+    this.errorMessage.set(message);
+
+    // Auto-cerrar el error después de 8 segundos
+    setTimeout(() => {
+      if (this.errorMessage() === message) {
+        this.errorMessage.set(null);
+      }
+    }, 8000);
   }
 
   goBack(): void {

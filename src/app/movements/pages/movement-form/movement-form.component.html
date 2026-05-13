@@ -39,6 +39,17 @@
       <div class="stepper-dot" [class.active]="currentStep() === 3"></div>
     </div>
 
+    <!-- Mensaje de Error Elegante -->
+    @if (errorMessage()) {
+      <div class="alert alert-danger d-flex align-items-center animate-fade-in mb-4" role="alert">
+        <span class="material-icons me-3">error_outline</span>
+        <div class="flex-grow-1 small">
+          {{ errorMessage() }}
+        </div>
+        <button type="button" class="btn-close ms-2" style="font-size: 0.7rem;" (click)="errorMessage.set(null)" aria-label="Close"></button>
+      </div>
+    }
+
     <form [formGroup]="movementForm" (ngSubmit)="onSubmit()">
 
       <!-- Paso 1: Selección de Cuentas -->

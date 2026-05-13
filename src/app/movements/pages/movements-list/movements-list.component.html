@@ -13,6 +13,11 @@
       </div>
       <!-- Desktop Actions -->
       <div class="d-none d-md-flex gap-3">
+        <button class="btn btn-outline-danger flex-column py-3 px-4" (click)="handleDownloadPdf()" [disabled]="isDownloadingPdf()" title="Descargar estado de cuenta en PDF">
+          <span class="material-icons mb-1" *ngIf="!isDownloadingPdf()">picture_as_pdf</span>
+          <span class="spinner-border spinner-border-sm mb-1" *ngIf="isDownloadingPdf()"></span>
+          <span class="text-nowrap">{{ isDownloadingPdf() ? 'Generando...' : 'Estado Cuenta' }}</span>
+        </button>
         <button class="btn btn-primary flex-column py-3 px-4" (click)="goToExternalTransfer()" title="Transferir dinero (cuentas externas)">
           <span class="material-icons mb-1">payments</span>
           <span class="text-nowrap">A otros <small class="opacity-50">(externas)</small></span>
@@ -37,6 +42,13 @@
           <span class="material-icons">sync_alt</span>
         </div>
         <span class="tiny-label fw-medium">Mis cuentas</span>
+      </div>
+      <div class="d-flex flex-column align-items-center cursor-pointer" (click)="handleDownloadPdf()">
+        <div class="btn-circle-action bg-danger-subtle text-danger mb-2">
+          <span class="material-icons" *ngIf="!isDownloadingPdf()">picture_as_pdf</span>
+          <span class="spinner-border spinner-border-sm" *ngIf="isDownloadingPdf()" style="width: 1.2rem; height: 1.2rem;"></span>
+        </div>
+        <span class="tiny-label fw-medium">{{ isDownloadingPdf() ? '...' : 'PDF' }}</span>
       </div>
     </div>
   </header>

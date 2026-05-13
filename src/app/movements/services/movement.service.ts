@@ -79,4 +79,24 @@ export class MovementService {
   deleteMovement(id: string): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
   }
+
+  downloadAccountStatement(params: { customerId: string, startDate: string, endDate: string }): Observable<Blob> {
+    const reportUrl = 'https://ays-msa-dm-cuaa-cr-account-stagi-zdpms.ondigitalocean.app/api/v1/reports/account-statement';
+
+    // Headers requeridos por el backend
+    const headers = new HttpHeaders({
+      'x-guid': '550e8400-e29b-41d4-a716-446655440000',
+      'x-app': 'ays-mfa-movements',
+      'Accept': 'application/pdf'
+    });
+
+    return this.http.get(reportUrl, {
+      params: {
+        ...params,
+        format: 'pdf'
+      },
+      headers: headers,
+      responseType: 'blob'
+    });
+  }
 }

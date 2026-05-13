@@ -49,6 +49,7 @@ export class MovementsListComponent implements OnInit {
 
   isFilterVisible = signal(false);
   isDatePickerOpen = signal(false);
+  isDownloadingPdf = signal(false);
 
   // Movimientos filtrados (reactivos desde la API)
   movements = toSignal(
@@ -332,5 +333,44 @@ export class MovementsListComponent implements OnInit {
     if (groupDate.getTime() === today.getTime()) return 'Hoy';
     if (groupDate.getTime() === yesterday.getTime()) return 'Ayer';
     return '';
+  }
+
+  handleDownloadPdf() {
+    // Determinar el cliente: si es admin usa el filtro, si no usa su propio ID de sesión
+    const customerId = this.isAdmin() ? this.selectedClientIdFilter() : this.currentClientId();
+    const startDate = this.fromDate();
+    const endDate = this.toDate();
+
+    if (!customerId) {
+      alert('Por favor seleccione un cliente para generar el reporte.');
+      return;
+    }
+
+    if (!startDate || !endDate) {
+      alert('Por favor seleccione un rango de fechas para generar el reporte.');
+      return;
+    }
+
+    this.isDownloadingPdf.set(true);
+
+    this.movementService.downloadAccountStatement({ customerId, startDate, endDate })
+      .subscribe({
+        next: (blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', `estado-de-cuenta-${startDate}-al-${endDate}.pdf`);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          window.URL.revokeObjectURL(url);
+          this.isDownloadingPdf.set(false);
+        },
+        error: (err) => {
+          console.error('Error al descargar el PDF', err);
+          alert('No se pudo generar el reporte. Verifique los datos o intente más tarde.');
+          this.isDownloadingPdf.set(false);
+        }
+      });
   }
 }
