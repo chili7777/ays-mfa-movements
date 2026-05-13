@@ -150,13 +150,6 @@ export class MovementsListComponent implements OnInit {
     this.router.navigate(['/movements/create'], { queryParams: { mode: 'external' } });
   }
 
-  goToCreateCustomer(): void {
-    // Redirigir a una ruta lógica para clientes o emitir un evento
-    // Dado que no hay ruta de clientes en este microfrontend, intentamos navegar a /customers
-    // o mostramos un mensaje si se espera que sea parte de otro módulo
-    window.location.href = '/customers/create';
-  }
-
   goToInternalTransfer(): void {
     this.router.navigate(['/movements/create'], { queryParams: { mode: 'internal' } });
   }
