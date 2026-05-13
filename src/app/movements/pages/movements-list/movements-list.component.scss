@@ -1,3 +1,94 @@
+.account-header {
+  .btn-icon-only {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: inherit;
+    border-radius: 50%;
+    transition: background 0.2s;
+
+    &:active {
+      background: rgba(255, 255, 255, 0.05);
+    }
+  }
+}
+
+.balance-block {
+  padding: 10px 0;
+}
+
+.tiny-label {
+  font-size: 11px;
+}
+
+.btn-circle-action {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-bottom: 8px;
+
+  &:active {
+    transform: scale(0.92);
+  }
+}
+
+.quick-action-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+
+  span.tiny-label {
+    line-height: 1.2;
+    display: block;
+    max-width: 80px;
+    font-weight: 500;
+  }
+}
+
+.movement-icon-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--error-color);
+
+  &.deposit {
+    color: var(--success-color);
+  }
+
+  .material-icons {
+    font-size: 20px;
+  }
+}
+
+.movement-list-card {
+  background: var(--surface-color);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.movement-item-new {
+  transition: background 0.2s;
+  &:active {
+    background: rgba(255, 255, 255, 0.03);
+  }
+}
+
 .filters-section {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.05);

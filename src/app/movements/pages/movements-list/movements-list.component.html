@@ -1,288 +1,163 @@
-<div class="container animate-fade-in">
-  <!-- Cabecera -->
-  <header class="mb-3 mt-3 px-2">
+<div class="container animate-fade-in pb-5">
+  <!-- 1. Header superior -->
+  <header class="account-header mb-4 mt-2 px-1">
     <div class="d-flex justify-content-between align-items-center">
-      <div>
-        <div class="d-flex align-items-center gap-2">
-          <h1 class="h3 mb-1 fw-bold">Transacciones</h1>
-          <span class="badge bg-primary bg-opacity-10 text-primary small fw-medium px-2 py-1 rounded-pill" style="font-size: 11px; border: 1px solid rgba(13, 110, 253, 0.2); text-transform: uppercase;">
-            {{ userRole() }}
-          </span>
+      <button class="btn btn-icon-only" (click)="goBack()">
+        <span class="material-icons">arrow_back</span>
+      </button>
+      <h1 class="h6 mb-0 fw-bold">Mi cuenta</h1>
+      <button class="btn btn-icon-only text-primary">
+        <div class="d-flex align-items-center gap-1">
+          <span class="tiny-label fw-bold d-none d-sm-inline">Ayuda</span>
+          <span class="material-icons">help_outline</span>
         </div>
-        <p class="text-secondary small mb-0">Historial de movimientos bancarios</p>
-      </div>
-      <!-- Desktop Actions -->
-      <div class="d-none d-md-flex gap-3">
-        <button class="btn btn-primary flex-column py-3 px-4" (click)="goToExternalTransfer()" title="Transferir dinero (cuentas externas)">
-          <span class="material-icons mb-1">payments</span>
-          <span class="text-nowrap">A otros <small class="opacity-50">(externas)</small></span>
-        </button>
-        <button class="btn btn-secondary flex-column py-3 px-4" (click)="goToInternalTransfer()" title="Transferencia entre cuentas">
-          <span class="material-icons mb-1">sync_alt</span>
-          <span class="text-nowrap">Mis cuentas</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Mobile Quick Actions -->
-    <div class="d-flex d-md-none justify-content-center gap-5 mt-3 mb-2">
-      <div class="d-flex flex-column align-items-center cursor-pointer" (click)="goToExternalTransfer()">
-        <div class="btn-circle-action bg-primary-subtle text-primary mb-2">
-          <span class="material-icons">payments</span>
-        </div>
-        <span class="tiny-label fw-medium">A otros</span>
-      </div>
-      <div class="d-flex flex-column align-items-center cursor-pointer" (click)="goToInternalTransfer()">
-        <div class="btn-circle-action bg-secondary-subtle text-secondary mb-2">
-          <span class="material-icons">sync_alt</span>
-        </div>
-        <span class="tiny-label fw-medium">Mis cuentas</span>
-      </div>
+      </button>
     </div>
   </header>
 
-  <!-- Filtros Rápidos / Mobile -->
-  <div class="show-mobile-only px-2 mb-3">
-    <div class="d-flex gap-2">
-      <button class="btn btn-secondary flex-grow-1 flex-column py-2" (click)="toggleFilters()" [class.btn-primary]="isFilterVisible()">
-        <span class="material-icons" style="font-size: 20px;">filter_list</span>
-        <span>Filtros</span>
-      </button>
-      <button class="btn btn-secondary flex-column py-2" (click)="clearFilters()" style="min-width: 60px;">
-        <span class="material-icons" style="font-size: 20px;">refresh</span>
-        <span>Limpiar</span>
+  <!-- 2. Bloque principal de saldo -->
+  <section class="balance-block text-center mb-4">
+    <p class="text-secondary small mb-1">Saldo disponible</p>
+    <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+      <h2 class="display-6 fw-bold mb-0">
+        {{ isBalanceVisible() ? (selectedAccount()?.balance | currency) : '$••••' }}
+      </h2>
+      <button class="btn btn-icon-only" (click)="toggleBalance()">
+        <span class="material-icons opacity-50" style="font-size: 20px;">{{ isBalanceVisible() ? 'visibility' : 'visibility_off' }}</span>
       </button>
     </div>
-  </div>
+    <div class="text-secondary small" *ngIf="isBalanceVisible()">
+      Saldo contable: {{ selectedAccount()?.balance | currency }}
+    </div>
+    <div class="text-secondary small opacity-50" *ngIf="!isBalanceVisible()">
+      Saldo contable: $••••
+    </div>
+  </section>
 
-  <!-- Panel de Filtros -->
-  <section class="filters-section mb-3 px-2" [class.hide-mobile]="!isFilterVisible()" *ngIf="isAdmin()">
-    <div class="py-2">
-      <!-- Filtro Cliente (Titular) -->
-      <div class="row g-3 mb-3">
-        <div class="col-12 col-md-6">
-          <label class="text-secondary small d-block mb-1 fw-medium">Titular</label>
-          <div class="custom-select-container">
-            <div class="selected-value-box d-flex align-items-center justify-content-between form-control"
-                 (click)="toggleCustomerDropdown()">
-              <div class="d-flex align-items-center gap-2 overflow-hidden">
-                <span class="material-icons opacity-50" style="font-size: 18px;">person</span>
-                <span class="text-truncate" [class.text-secondary]="!selectedClientIdFilter()">{{selectedCustomerName()}}</span>
-              </div>
-              <span class="material-icons opacity-50">{{showCustomerDropdown() ? 'expand_less' : 'expand_more'}}</span>
-            </div>
-
-            <!-- Dropdown Panel -->
-            <div *ngIf="showCustomerDropdown()" class="dropdown-panel shadow-lg animate-fade-in">
-              <div class="p-2 search-container">
-                <input
-                  type="text"
-                  class="form-control form-control-sm"
-                  placeholder="Buscar cliente..."
-                  [ngModel]="customerSearchTerm()"
-                  (ngModelChange)="customerSearchTerm.set($event)"
-                  (click)="$event.stopPropagation()"
-                >
-              </div>
-              <div class="options-list">
-                <div class="option-item p-2 px-3" (click)="clearCustomerFilter()">
-                  <span class="fw-medium text-primary">Todos los Clientes</span>
-                </div>
-                <div
-                  *ngFor="let customer of dropdownCustomers()"
-                  class="option-item p-2 px-3"
-                  (click)="selectCustomerFilter(customer); $event.stopPropagation()"
-                  [class.active]="selectedClientIdFilter() === customer.id"
-                >
-                  <div class="d-flex flex-column">
-                    <span class="fw-medium">{{customer.name}}</span>
-                    <span class="text-secondary small opacity-75">{{customer.identification}}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <!-- Overlay -->
-            <div *ngIf="showCustomerDropdown()" class="dropdown-overlay" (click)="showCustomerDropdown.set(false)"></div>
-          </div>
+  <!-- 3. Información de la cuenta -->
+  @if (selectedAccount(); as currentAcc) {
+    <section class="account-info px-3 mb-4">
+      <div class="d-flex justify-content-between align-items-center py-3 border-top border-bottom border-white border-opacity-10">
+        <div>
+          <div class="fw-bold text-primary">{{ currentAcc.accountType || 'Cuenta Transaccional' }}</div>
+          <div class="text-secondary small">Nro. {{ currentAcc.accountNumber }}</div>
         </div>
-
-        <!-- Filtro Cuenta -->
-        <div class="col-12 col-md-6">
-          <label class="text-secondary small d-block mb-1 fw-medium d-flex justify-content-between">
-            <span>Cuenta</span>
-            <span *ngIf="isAdmin() && accounts().length < 5" class="text-primary cursor-pointer fw-normal" style="font-size: 10px;" (click)="loadAllAccounts()">Cargar todas</span>
-          </label>
-          <select class="form-select" [ngModel]="accountId()" (ngModelChange)="accountId.set($event)" (mousedown)="loadAllAccounts()">
-            <option value="">Todas las cuentas</option>
-            <option *ngFor="let acc of filteredAccounts()" [value]="acc.id || acc.accountId">
-              {{acc.accountNumber}} - {{acc.accountType}}
-            </option>
-          </select>
+        <button class="btn btn-link text-decoration-none p-0 d-flex align-items-center gap-1 text-primary" (click)="shareAccount()">
+            <span class="material-icons" style="font-size: 18px;">share</span>
+            <span class="tiny-label fw-bold">Compartir cuenta</span>
+        </button>
+      </div>
+    </section>
+  } @else {
+    <!-- Si no hay cuenta seleccionada (Caso ADMIN o inicio) -->
+    <section class="account-info px-3 mb-4">
+      <div class="alert alert-info py-2 rounded-4 border-0 bg-primary bg-opacity-10">
+        <div class="d-flex align-items-center gap-2">
+          <span class="material-icons text-primary">info</span>
+          <span class="small">Selecciona una cuenta para ver detalles</span>
         </div>
       </div>
+      <select class="form-select rounded-pill mt-2" [ngModel]="accountId()" (ngModelChange)="accountId.set($event)">
+        <option value="">Selecciona tu cuenta...</option>
+        <option *ngFor="let acc of filteredAccounts()" [value]="acc.id || acc.accountId">
+          {{acc.accountNumber}} - {{acc.accountType}}
+        </option>
+      </select>
+    </section>
+  }
 
-      <div class="row g-3">
-        <!-- Filtro Tipo -->
-        <div class="col-12 col-md-6">
-          <label class="text-secondary small d-block mb-1 fw-medium">Tipo de Transacción</label>
-          <select class="form-select" [ngModel]="movementType()" (ngModelChange)="movementType.set($event)">
-            <option value="">Todos los tipos</option>
-            <option value="DEPOSIT">Depósitos</option>
-            <option value="WITHDRAWAL">Retiros</option>
-          </select>
-        </div>
-
-        <!-- Filtro Calendario -->
-        <div class="col-12 col-md-6">
-          <label class="text-secondary small d-block mb-1 fw-medium">Período</label>
-          <div class="position-relative">
-            <button class="form-control text-start d-flex justify-content-between align-items-center"
-                    (click)="isDatePickerOpen.set(true)">
-              <span>{{ dateRangeLabel() }}</span>
-              <span class="material-icons text-secondary" style="font-size: 20px;">calendar_today</span>
-            </button>
+  <!-- 4. Acciones rápidas -->
+  <section class="quick-actions px-1 mb-5">
+    <div class="row g-0 justify-content-between">
+      <div class="col-3">
+        <div class="quick-action-item" (click)="goToExternalTransfer()">
+          <div class="btn-circle-action bg-primary bg-opacity-10 text-primary">
+            <span class="material-icons">payments</span>
           </div>
+          <span class="tiny-label">Transferir dinero</span>
+        </div>
+      </div>
+      <div class="col-3">
+        <div class="quick-action-item" (click)="goToInternalTransfer()">
+          <div class="btn-circle-action bg-primary bg-opacity-10 text-primary">
+            <span class="material-icons">sync_alt</span>
+          </div>
+          <span class="tiny-label">A mis cuentas</span>
+        </div>
+      </div>
+      <div class="col-3">
+        <div class="quick-action-item" (click)="goToPayments()">
+          <div class="btn-circle-action bg-primary bg-opacity-10 text-primary">
+            <span class="material-icons">receipt_long</span>
+          </div>
+          <span class="tiny-label">Realizar pagos</span>
+        </div>
+      </div>
+      <div class="col-3">
+        <div class="quick-action-item" (click)="goToVerifyTransfer()">
+          <div class="btn-circle-action bg-primary bg-opacity-10 text-primary">
+            <span class="material-icons">fact_check</span>
+          </div>
+          <span class="tiny-label">Verificar transf.</span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Para USER mostramos filtros simplificados pero incluyendo Cuenta (requerido para activar vista) -->
-  <section class="filters-section mb-3 px-2" [class.hide-mobile]="!isFilterVisible()" *ngIf="!isAdmin()">
-     <div class="row g-3">
-        <!-- Filtro Cuenta para USER -->
-        <div class="col-12 col-md-4">
-          <label class="text-secondary small d-block mb-1 fw-medium">Selecciona tu Cuenta</label>
-          <select class="form-select" [ngModel]="accountId()" (ngModelChange)="accountId.set($event)">
-            <option value="">Selecciona una cuenta...</option>
-            <option *ngFor="let acc of filteredAccounts()" [value]="acc.id || acc.accountId">
-              {{acc.accountNumber}} - {{acc.accountType}}
-            </option>
-          </select>
-        </div>
-        <div class="col-12 col-md-4">
-          <label class="text-secondary small d-block mb-1 fw-medium">Tipo</label>
-          <select class="form-select" [ngModel]="movementType()" (ngModelChange)="movementType.set($event)">
-            <option value="">Todos</option>
-            <option value="DEPOSIT">Depósitos</option>
-            <option value="WITHDRAWAL">Retiros</option>
-          </select>
-        </div>
-        <div class="col-12 col-md-4">
-          <label class="text-secondary small d-block mb-1 fw-medium">Período</label>
-          <button class="form-control text-start d-flex justify-content-between align-items-center" (click)="isDatePickerOpen.set(true)">
-            <span>{{ dateRangeLabel() }}</span>
-            <span class="material-icons text-secondary">calendar_today</span>
-          </button>
-        </div>
-     </div>
+  <!-- 5. Sección de movimientos -->
+  <section class="movements-header d-flex justify-content-between align-items-center px-3 mb-2">
+    <h3 class="h6 fw-bold mb-0">Movimientos</h3>
+    <button class="btn btn-link btn-sm text-decoration-none d-flex align-items-center gap-1 p-0 text-primary" (click)="isDatePickerOpen.set(true)">
+      <span class="material-icons" style="font-size: 18px;">calendar_today</span>
+      <span class="fw-bold" style="font-size: 11px;">Filtrar por fechas</span>
+    </button>
   </section>
 
-  <div *ngIf="isLoading()" class="spinner-container">
+  <!-- Loader -->
+  <div *ngIf="isLoading()" class="spinner-container py-4">
     <div class="modern-loader">
-      <div class="ring"></div>
-      <div class="ring"></div>
-      <div class="ring"></div>
-      <div class="core"></div>
+      <div class="ring"></div><div class="core"></div>
     </div>
-    <p class="loading-text">Cargando movimientos...</p>
   </div>
 
-  <!-- Lista de Movimientos -->
-  <section *ngIf="!isLoading()" class="list-section">
-
-    <!-- Vista Desktop -->
-    <div *ngIf="groupedMovements().length > 0" class="hide-mobile overflow-hidden">
-      <table class="table mb-0">
-        <thead>
-          <tr>
-            <th class="ps-4">Hora</th>
-            <th>Cuenta</th>
-            <th>Tipo</th>
-            <th>Monto</th>
-            <th>Saldo</th>
-            <th class="text-end pe-4">Acciones</th>
-          </tr>
-        </thead>
-        <tbody *ngFor="let group of groupedMovements()">
-          <!-- Cabecera de Grupo por Fecha -->
-          <tr>
-            <td colspan="6" class="ps-4 py-3 bg-surface-alt">
-              <span class="text-secondary small fw-bold text-uppercase letter-spacing-1 text-capitalize">
-                @if (getGroupLabel(group.date); as label) {
-                  {{ label }}, {{ group.date | date:'dd MMM.yyyy':'':'es-ES' }}
-                } @else {
-                  {{ group.date | date:'EEEE, dd MMM.yyyy':'':'es-ES' }}
-                }
-              </span>
-            </td>
-          </tr>
-          <tr *ngFor="let m of group.items" class="cursor-pointer movement-row" [routerLink]="['/movements/detail', m.id]">
-            <td class="ps-4">
-              <div class="time-pill">
-                <span class="material-icons">schedule</span>
-                {{m.movementDate | date:'HH:mm'}}
-              </div>
-            </td>
-            <td>
-              <div class="fw-medium">{{getAccountLabel(m.accountId)}}</div>
-            </td>
-            <td>
-              <span class="type-badge" [class.deposit]="m.movementType === 'DEPOSIT'">
-                {{getTypeLabel(m.movementType)}}
-              </span>
-            </td>
-            <td class="fw-bold" [style.color]="m.movementType === 'DEPOSIT' ? 'var(--success-color)' : 'var(--error-color)'">
-              {{m.movementType === 'DEPOSIT' ? '+' : '-'}}{{m.amount | currency}}
-            </td>
-            <td>
-              <span class="text-secondary fw-medium">{{m.balance | currency}}</span>
-            </td>
-            <td class="text-end pe-4">
-              <span class="material-icons text-primary opacity-75" style="font-size: 24px;">chevron_right</span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Vista Mobile -->
-    <div *ngIf="groupedMovements().length > 0" class="show-mobile-only px-2">
-      <div *ngFor="let group of groupedMovements()" class="mb-4">
-        <!-- Separador de Fecha Mobile -->
-        <div class="px-3 py-2 date-separator-mobile sticky-top" style="z-index: 5; top: 0;">
-          <span class="text-secondary small fw-bold text-uppercase text-capitalize letter-spacing-1">
-            @if (getGroupLabel(group.date); as label) {
-              {{ label }}, {{ group.date | date:'dd MMM.yyyy':'':'es-ES' }}
-            } @else {
-              {{ group.date | date:'EEEE, dd MMM.yyyy':'':'es-ES' }}
-            }
-          </span>
+  <!-- Listado -->
+  <section *ngIf="!isLoading()" class="px-1">
+    <div *ngIf="groupedMovements().length > 0; else emptyState">
+      <div *ngFor="let group of groupedMovements()" class="mb-3">
+        <!-- Fecha agrupada -->
+        <div class="px-3 py-2 text-secondary small fw-bold text-capitalize opacity-75">
+          @if (getGroupLabel(group.date); as label) {
+            {{ label }}, {{ group.date | date:'dd MMM. yyyy':'':'es-ES' }}
+          } @else {
+            {{ group.date | date:'EEEE, dd MMM. yyyy':'':'es-ES' }}
+          }
         </div>
 
-        <div class="movement-list-container">
-          <div *ngFor="let m of group.items" class="movement-card animate-fade-in" [routerLink]="['/movements/detail', m.id]">
+        <div class="movement-list-card shadow-sm rounded-4 overflow-hidden">
+          <div *ngFor="let m of group.items; let last = last"
+               class="movement-item-new px-3 py-3 cursor-pointer d-flex align-items-center justify-content-between"
+               [class.border-bottom]="!last"
+               [routerLink]="['/movements/detail', m.id]"
+               style="border-color: rgba(255,255,255,0.05) !important;">
+
             <div class="d-flex align-items-center gap-3">
-              <div class="flex-grow-1">
-                <div class="d-flex justify-content-between align-items-center">
-                  <div>
-                    <div class="fw-bold mb-2" style="font-size: 15px;">{{getAccountLabel(m.accountId)}}</div>
-                    <div class="time-pill">
-                      <span class="material-icons">schedule</span>
-                      {{m.movementDate | date:'HH:mm'}}
-                    </div>
-                  </div>
-                  <div class="d-flex align-items-center gap-2">
-                    <div class="text-end">
-                      <div class="fw-bold mb-0" style="font-size: 16px;" [style.color]="m.movementType === 'DEPOSIT' ? 'var(--success-color)' : 'var(--error-color)'">
-                        {{m.movementType === 'DEPOSIT' ? '+' : '-'}}{{m.amount | currency}}
-                      </div>
-                      <div class="text-secondary" style="font-size: 12px;">{{m.balance | currency}}</div>
-                    </div>
-                    <span class="material-icons text-primary opacity-75" style="font-size: 24px;">chevron_right</span>
-                  </div>
-                </div>
+              <div class="movement-icon-circle" [class.deposit]="m.movementType === 'DEPOSIT'">
+                <span class="material-icons">{{ m.movementType === 'DEPOSIT' ? 'add' : 'remove' }}</span>
               </div>
+              <div class="overflow-hidden">
+                <div class="fw-bold text-truncate" style="max-width: 150px; font-size: 14px;">{{ m.description || 'Transacción' }}</div>
+                <div class="text-secondary tiny-label text-truncate">{{ getAccountLabel(m.accountId) }}</div>
+              </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+              <div class="text-end">
+                <div class="fw-bold" style="font-size: 15px;" [style.color]="m.movementType === 'DEPOSIT' ? 'var(--success-color)' : 'var(--error-color)'">
+                  {{ m.movementType === 'DEPOSIT' ? '+' : '-' }}{{ m.amount | currency }}
+                </div>
+                <div class="text-secondary tiny-label" *ngIf="isBalanceVisible()">{{ m.balance | currency }}</div>
+              </div>
+              <span class="material-icons text-secondary opacity-30" style="font-size: 20px;">chevron_right</span>
             </div>
           </div>
         </div>
@@ -290,44 +165,72 @@
     </div>
 
     <!-- Empty State -->
-    <div *ngIf="filteredMovements().length === 0" class="empty-state mt-2">
-      <div class="empty-icon-container">
-        <svg *ngIf="!(!isAdmin() && !accountId())" width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M19 8.5V17C19 18.1046 18.1046 19 17 19H7C5.89543 19 5 18.1046 5 17V7C5 5.89543 5.89543 5 7 5H13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="color: var(--accent-color)"/>
-          <path d="M19 8.5L13.5 3M19 8.5H13.5V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-color)"/>
-          <path d="M9 12H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="opacity: 0.3"/>
-          <path d="M9 15H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="opacity: 0.3"/>
-        </svg>
-        <span *ngIf="!isAdmin() && !accountId()" class="material-icons" style="font-size: 60px; color: var(--accent-color);">account_balance_wallet</span>
+    <ng-template #emptyState>
+      <div class="text-center py-5 opacity-50">
+         <span class="material-icons display-4 mb-3">history</span>
+         <h4 class="h6 fw-bold">Sin movimientos</h4>
+         <p class="small">No hay transacciones en este período.</p>
+         <button class="btn btn-link btn-sm text-decoration-none" (click)="clearFilters()">Ver todos</button>
       </div>
-
-      <ng-container *ngIf="!isAdmin() && !accountId(); else noMovements">
-        <h3>Consulta tus movimientos</h3>
-        <p>Selecciona una de tus cuentas arriba para ver el historial de transacciones.</p>
-        <button class="btn btn-primary mt-3 px-4 py-2" (click)="toggleFilters()" *ngIf="!isFilterVisible()">
-          Abrir Filtros
-        </button>
-      </ng-container>
-
-      <ng-template #noMovements>
-        <h3>Sin transacciones</h3>
-        <p>No se encontraron movimientos registrados con estos criterios.</p>
-        <button class="btn btn-primary mt-4" (click)="clearFilters()" *ngIf="isAdmin()">
-          Ver todo el historial
-        </button>
-        <button class="btn btn-outline-secondary mt-3" (click)="clearFilters()" *ngIf="!isAdmin()">
-          Limpiar filtros
-        </button>
-      </ng-template>
-    </div>
+    </ng-template>
   </section>
 
-  <!-- Componente de Calendario -->
-  <app-date-range-picker
-    [isOpen]="isDatePickerOpen()"
-    [initialFromDate]="fromDate()"
-    [initialToDate]="toDate()"
-    (close)="isDatePickerOpen.set(false)"
-    (selectRange)="onDateRangeSelected($event)">
-  </app-date-range-picker>
+  <!-- Filtros ADMIN (Opcional, al final o colapsable) -->
+  <section class="mt-5 px-3 pt-4 border-top border-white border-opacity-10" *ngIf="isAdmin()">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="small fw-bold text-secondary mb-0">Panel de Administración</h4>
+          <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill tiny-label">{{ userRole() }}</span>
+      </div>
+
+      <!-- Selector de Cliente para ADMIN -->
+      <div class="custom-select-container mb-3">
+          <div class="selected-value-box d-flex align-items-center justify-content-between form-control form-control-sm"
+               (click)="toggleCustomerDropdown()">
+              <div class="d-flex align-items-center gap-2 overflow-hidden">
+                  <span class="material-icons opacity-50" style="font-size: 16px;">person</span>
+                  <span class="text-truncate small" [class.text-secondary]="!selectedClientIdFilter()">{{selectedCustomerName()}}</span>
+              </div>
+              <span class="material-icons opacity-50" style="font-size: 18px;">{{showCustomerDropdown() ? 'expand_less' : 'expand_more'}}</span>
+          </div>
+
+          <!-- Dropdown Panel -->
+          <div *ngIf="showCustomerDropdown()" class="dropdown-panel shadow-lg animate-fade-in">
+              <div class="p-2 search-container">
+                  <input type="text" class="form-control form-control-sm" placeholder="Buscar cliente..." [ngModel]="customerSearchTerm()" (ngModelChange)="customerSearchTerm.set($event)" (click)="$event.stopPropagation()">
+              </div>
+              <div class="options-list">
+                  <div class="option-item p-2 px-3" (click)="clearCustomerFilter()"><span class="small fw-medium text-primary">Todos los Clientes</span></div>
+                  <div *ngFor="let customer of dropdownCustomers()" class="option-item p-2 px-3" (click)="selectCustomerFilter(customer); $event.stopPropagation()" [class.active]="selectedClientIdFilter() === customer.id">
+                      <div class="d-flex flex-column"><span class="small fw-medium">{{customer.name}}</span><span class="tiny-label text-secondary opacity-75">{{customer.identification}}</span></div>
+                  </div>
+              </div>
+          </div>
+          <div *ngIf="showCustomerDropdown()" class="dropdown-overlay" (click)="showCustomerDropdown.set(false)"></div>
+      </div>
+
+      <div class="row g-2">
+          <div class="col-6">
+              <select class="form-select form-select-sm rounded-pill" [ngModel]="accountId()" (ngModelChange)="accountId.set($event)" (mousedown)="loadAllAccounts()">
+                  <option value="">Cuenta...</option>
+                  <option *ngFor="let acc of filteredAccounts()" [value]="acc.id || acc.accountId">{{acc.accountNumber}}</option>
+              </select>
+          </div>
+          <div class="col-6">
+              <select class="form-select form-select-sm rounded-pill" [ngModel]="movementType()" (ngModelChange)="movementType.set($event)">
+                  <option value="">Tipo...</option>
+                  <option value="DEPOSIT">Depósitos</option>
+                  <option value="WITHDRAWAL">Retiros</option>
+              </select>
+          </div>
+      </div>
+  </section>
 </div>
+
+<!-- Componente de Calendario -->
+<app-date-range-picker
+  [isOpen]="isDatePickerOpen()"
+  [initialFromDate]="fromDate()"
+  [initialToDate]="toDate()"
+  (close)="isDatePickerOpen.set(false)"
+  (selectRange)="onDateRangeSelected($event)">
+</app-date-range-picker>

@@ -49,6 +49,7 @@ export class MovementsListComponent implements OnInit {
 
   isFilterVisible = signal(false);
   isDatePickerOpen = signal(false);
+  isBalanceVisible = signal(true);
 
   // Movimientos filtrados (reactivos desde la API)
   movements = toSignal(
@@ -126,6 +127,12 @@ export class MovementsListComponent implements OnInit {
     }
 
     return all;
+  });
+
+  selectedAccount = computed(() => {
+    const id = this.accountId();
+    if (!id) return null;
+    return this.accounts().find(a => (a.id || a.accountId) === id);
   });
 
   groupedMovements = computed(() => {
@@ -310,6 +317,40 @@ export class MovementsListComponent implements OnInit {
 
   goToDetail(id: string): void {
     this.router.navigate(['/movements/detail', id]);
+  }
+
+  toggleBalance(): void {
+    this.isBalanceVisible.update(v => !v);
+  }
+
+  goBack(): void {
+    window.history.back();
+  }
+
+  goToPayments(): void {
+    console.log('Navegando a Realizar pagos...');
+    // Funcionalidad no implementada aún
+  }
+
+  goToVerifyTransfer(): void {
+    console.log('Navegando a Verificar transferencia...');
+    // Funcionalidad no implementada aún
+  }
+
+  shareAccount(): void {
+    const acc = this.selectedAccount();
+    if (acc) {
+      const text = `Cuenta: ${acc.accountType}\nNúmero: ${acc.accountNumber}\nBanco: AYS Bank`;
+      if (navigator.share) {
+        navigator.share({
+          title: 'Compartir mi cuenta',
+          text: text
+        }).catch(err => console.error('Error al compartir', err));
+      } else {
+        navigator.clipboard.writeText(text);
+        alert('Datos de cuenta copiados al portapapeles');
+      }
+    }
   }
 
   getTypeLabel(type: string): string {
