@@ -97,6 +97,12 @@ export class MovementsListComponent implements OnInit {
 
   filteredMovements = computed(() => this.movements());
 
+  selectedAccount = computed(() => {
+    const id = this.accountId();
+    if (!id) return null;
+    return this.accounts().find(a => a.id === id || a.accountId === id) || null;
+  });
+
   dropdownCustomers = computed(() => {
     const term = this.customerSearchTerm().toLowerCase().trim();
     if (!term) return this.customers();

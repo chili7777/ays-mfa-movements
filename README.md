@@ -63,6 +63,30 @@ Si prefieres usar Docker para simular el entorno de producción:
 3. **Manejo de CORS:** Las peticiones al backend están configuradas para dominios específicos en Digital Ocean.
 4. **Standalone Components:** El proyecto utiliza el patrón de componentes Standalone de Angular (sin `AppModule`).
 
+## 🌐 Ecosistema de Proyectos
+
+Este micro-frontend forma parte de un ecosistema más amplio. A continuación se detallan los repositorios relacionados:
+
+- **[ays-shl-account-management](https://github.com/chili7777/ays-shl-account-management):** La aplicación Shell que orquestra y contiene todos los micro-frontends.
+- **[ays-mfa-movements](https://github.com/chili7777/ays-mfa-movements):** (Este repositorio) MFE para la gestión y consulta de movimientos.
+- **[ays-mfa-customer](https://github.com/chili7777/ays-mfa-customer):** MFE para la gestión de datos de clientes.
+- **[ays-mfa-account](https://github.com/chili7777/ays-mfa-account):** MFE para la gestión de cuentas bancarias.
+- **[ays-msa-dm-cuaa-cr-account](https://github.com/chili7777/ays-msa-dm-cuaa-cr-account):** Microservicio de backend para el dominio de cuentas.
+- **[ays-msa-dm-pain-cr-movement](https://github.com/chili7777/ays-msa-dm-pain-cr-movement):** Microservicio de backend para el dominio de movimientos y pagos.
+- **[ays-custom-instructions](https://github.com/chili7777/ays-custom-instructions):** Repositorio de instrucciones y configuraciones personalizadas del proyecto.
+
+## 🔑 Credenciales de Acceso
+
+Para probar la aplicación en el entorno de pruebas, se pueden utilizar las siguientes credenciales:
+
+### 💼 BackOffice (Admin)
+- **Usuario:** `0103322228`
+- **Contraseña:** `asdfghjk`
+
+### 📱 Usuarios App (Transferencias)
+- **Usuario 1:** `1718048232` / **Contraseña:** `qwertyui`
+- **Usuario 2:** `1718048315` / **Contraseña:** `zxcvbnmq`
+
 ## 🚢 Despliegue (CI/CD)
 
 El proyecto cuenta con un flujo de trabajo de GitHub Actions que automatiza el despliegue en Digital Ocean:

@@ -8,7 +8,7 @@
       </button>
       <h1 class="h5 fw-bold mb-0">
         Detalle de Transacción
-        <span class="text-secondary small ms-2" style="font-size: 14px; opacity: 0.7; font-weight: 400;">({{ userRole() }})</span>
+        <span *ngIf="userRole() && userRole() !== 'USER'" class="text-secondary small ms-2" style="font-size: 14px; opacity: 0.7; font-weight: 400;">({{ userRole() }})</span>
       </h1>
     </header>
 
@@ -41,7 +41,7 @@
             </span>
           </div>
           <h2 class="display-6 fw-bold mb-1" [style.color]="m.movementType === 'DEPOSIT' ? 'var(--success-color)' : 'var(--error-color)'">
-            {{m.movementType === 'DEPOSIT' ? '+' : '-'}} {{m.amount | currency}}
+            {{m.movementType === 'DEPOSIT' ? '+' : ''}} {{m.amount | currency}}
           </h2>
           <div class="status-badge mx-auto mt-2" [class.deposit]="m.movementType === 'DEPOSIT'">
             {{getTypeLabel(m.movementType)}} Exitosa

@@ -174,3 +174,71 @@
     background-color: rgba(255, 255, 255, 0.02);
   }
 }
+
+.role-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #58a6ff;
+  background: rgba(88, 166, 255, 0.1);
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+
+  &.admin-role {
+    color: #f0b90b;
+    background: rgba(240, 185, 11, 0.1);
+    border-color: rgba(240, 185, 11, 0.2);
+  }
+}
+
+.account-summary-card {
+  .card {
+    border-radius: 24px;
+    min-height: 180px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+    &:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3) !important;
+    }
+  }
+
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0042a5 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .account-card-bg-icon {
+    position: absolute;
+    right: -10px;
+    bottom: -30px;
+    opacity: 0.08;
+    pointer-events: none;
+    transform: rotate(-10deg);
+
+    .material-icons {
+      font-size: 200px;
+    }
+  }
+
+  .min-height-card {
+    min-height: 120px;
+  }
+
+  .letter-spacing-1 {
+    letter-spacing: 1.5px;
+  }
+
+  .tiny-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
