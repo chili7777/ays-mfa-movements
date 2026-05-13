@@ -112,7 +112,7 @@
             <span>Cuenta</span>
             <span *ngIf="isAdmin() && accounts().length < 5" class="text-primary cursor-pointer fw-normal" style="font-size: 10px;" (click)="loadAllAccounts()">Cargar todas</span>
           </label>
-          <select class="form-select" [ngModel]="accountId()" (ngModelChange)="accountId.set($event); loadMovements()" (mousedown)="loadAllAccounts()">
+          <select class="form-select" [ngModel]="accountId()" (ngModelChange)="accountId.set($event)" (mousedown)="loadAllAccounts()">
             <option value="">Todas las cuentas</option>
             <option *ngFor="let acc of filteredAccounts()" [value]="acc.id || acc.accountId">
               {{acc.accountNumber}} - {{acc.accountType}}
@@ -125,7 +125,7 @@
         <!-- Filtro Tipo -->
         <div class="col-12 col-md-6">
           <label class="text-secondary small d-block mb-1 fw-medium">Tipo de Transacción</label>
-          <select class="form-select" [ngModel]="movementType()" (ngModelChange)="movementType.set($event); loadMovements()">
+          <select class="form-select" [ngModel]="movementType()" (ngModelChange)="movementType.set($event)">
             <option value="">Todos los tipos</option>
             <option value="DEPOSIT">Depósitos</option>
             <option value="WITHDRAWAL">Retiros</option>
@@ -153,7 +153,7 @@
         <!-- Filtro Cuenta para USER -->
         <div class="col-12 col-md-4">
           <label class="text-secondary small d-block mb-1 fw-medium">Selecciona tu Cuenta</label>
-          <select class="form-select" [ngModel]="accountId()" (ngModelChange)="accountId.set($event); loadMovements()">
+          <select class="form-select" [ngModel]="accountId()" (ngModelChange)="accountId.set($event)">
             <option value="">Selecciona una cuenta...</option>
             <option *ngFor="let acc of filteredAccounts()" [value]="acc.id || acc.accountId">
               {{acc.accountNumber}} - {{acc.accountType}}
@@ -162,7 +162,7 @@
         </div>
         <div class="col-12 col-md-4">
           <label class="text-secondary small d-block mb-1 fw-medium">Tipo</label>
-          <select class="form-select" [ngModel]="movementType()" (ngModelChange)="movementType.set($event); loadMovements()">
+          <select class="form-select" [ngModel]="movementType()" (ngModelChange)="movementType.set($event)">
             <option value="">Todos</option>
             <option value="DEPOSIT">Depósitos</option>
             <option value="WITHDRAWAL">Retiros</option>

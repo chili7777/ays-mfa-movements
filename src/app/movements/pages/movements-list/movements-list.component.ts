@@ -2,6 +2,8 @@ import { Component, OnInit, inject, signal, computed, effect } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { combineLatest, debounceTime, filter, switchMap, tap, of, catchError } from 'rxjs';
 import { MovementService } from '../../services/movement.service';
 import { Movement } from '../../interfaces/movement.interface';
 import { DateRangePickerComponent } from '../../components/date-range-picker/date-range-picker.component';
@@ -26,7 +28,6 @@ export class MovementsListComponent implements OnInit {
   private readonly mfeBridge = inject(MfeBridgeService);
 
   // Signals para el estado
-  movements = signal<Movement[]>([]);
   accounts = signal<any[]>([]);
   customers = signal<Customer[]>([]);
   isLoading = signal(true);
@@ -49,7 +50,50 @@ export class MovementsListComponent implements OnInit {
   isFilterVisible = signal(false);
   isDatePickerOpen = signal(false);
 
-  // Movimientos filtrados (cliente-side si es necesario, pero cargamos de API)
+  // Movimientos filtrados (reactivos desde la API)
+  movements = toSignal(
+    combineLatest({
+      accId: toObservable(this.accountId),
+      type: toObservable(this.movementType),
+      from: toObservable(this.fromDate),
+      to: toObservable(this.toDate),
+      role: toObservable(this.userRole),
+      clientId: toObservable(this.currentClientId)
+    }).pipe(
+      debounceTime(50),
+      // Solo disparar cuando tenemos información de sesión
+      filter(({ role }) => !!role),
+      tap(() => this.isLoading.set(true)),
+      switchMap(({ accId, type, from, to, role, clientId }) => {
+        const isAdmin = role === 'ADMIN' || role === 'GESTOR' || role === 'ROOT';
+
+        // Seguridad: Si no es ADMIN y NO hay accountId seleccionado, no cargamos nada
+        if (!isAdmin && !accId) {
+          return of([]);
+        }
+
+        const params = {
+          accountId: accId || undefined,
+          fromDate: from || undefined,
+          toDate: to || undefined,
+          movementType: type || undefined
+        };
+
+        return this.movementService.getAllMovements(params).pipe(
+          tap(data => {
+            if (isAdmin) this.loadMissingAccountLabels(data);
+          }),
+          catchError(err => {
+            console.error('Error al cargar movimientos', err);
+            return of([]);
+          })
+        );
+      }),
+      tap(() => this.isLoading.set(false))
+    ),
+    { initialValue: [] }
+  );
+
   filteredMovements = computed(() => this.movements());
 
   dropdownCustomers = computed(() => {
@@ -171,9 +215,6 @@ export class MovementsListComponent implements OnInit {
         error: (err) => console.error('Error al cargar cuentas del cliente', err)
       });
     }
-
-    // Cargar movimientos inmediatamente
-    this.loadMovements();
   }
 
   toggleFilters(): void {
@@ -183,64 +224,8 @@ export class MovementsListComponent implements OnInit {
   onDateRangeSelected(range: { fromDate: string; toDate: string }): void {
     this.fromDate.set(range.fromDate);
     this.toDate.set(range.toDate);
-    this.loadMovements();
   }
 
-  loadMovements(): void {
-    if (!this.userRole()) return; // Evitar peticiones antes de sincronizar sesión
-
-    this.isLoading.set(true);
-
-    let currentAccountId = this.accountId();
-    const isAdmin = this.isAdmin();
-    const clientId = this.currentClientId();
-
-    // Seguridad: Si no es ADMIN, validar que la cuenta pertenezca al usuario
-    if (!isAdmin && currentAccountId) {
-      const allowedAccounts = this.filteredAccounts();
-      const isAllowed = allowedAccounts.some(a => (a.id === currentAccountId || a.accountId === currentAccountId));
-      // No reseteamos el accountId inmediatamente si allowedAccounts está vacío,
-      // porque podría ser que todavía no han cargado las cuentas.
-      if (!isAllowed && allowedAccounts.length > 0) {
-        console.warn('[Movements List] Intento de acceso a cuenta no autorizada:', currentAccountId);
-        currentAccountId = '';
-        this.accountId.set('');
-      }
-    }
-
-    // Seguridad adicional: Si no es ADMIN y NO hay accountId seleccionado,
-    // NO cargamos nada por defecto (según requerimiento: solo activarse cuando selecciona una cuenta)
-    if (!isAdmin && !currentAccountId) {
-      console.log('[Movements List] USER no ha seleccionado cuenta. No se cargan movimientos.');
-      this.movements.set([]);
-      this.isLoading.set(false);
-      return;
-    }
-
-    let accountIdsFilter: string | undefined = currentAccountId || undefined;
-
-    const params = {
-      accountId: accountIdsFilter,
-      fromDate: this.fromDate() || undefined,
-      toDate: this.toDate() || undefined,
-      movementType: this.movementType() || undefined
-    };
-
-    this.movementService.getAllMovements(params).subscribe({
-      next: (data) => {
-        this.movements.set(data);
-        this.isLoading.set(false);
-        // Optimización: Cargar labels de cuentas que vienen en el listado
-        if (this.isAdmin()) {
-          this.loadMissingAccountLabels(data);
-        }
-      },
-      error: (err) => {
-        console.error('Error al cargar movimientos', err);
-        this.isLoading.set(false);
-      }
-    });
-  }
 
   /**
    * Carga la información de las cuentas que aparecen en los movimientos
@@ -282,7 +267,6 @@ export class MovementsListComponent implements OnInit {
     this.movementType.set('');
     this.fromDate.set('');
     this.toDate.set('');
-    this.loadMovements();
   }
 
   toggleCustomerDropdown(): void {
@@ -306,8 +290,6 @@ export class MovementsListComponent implements OnInit {
         error: (err) => console.error('Error al cargar cuentas del cliente seleccionado', err)
       });
     }
-
-    this.loadMovements();
   }
 
   clearCustomerFilter(): void {
@@ -316,7 +298,6 @@ export class MovementsListComponent implements OnInit {
     this.accountId.set('');
     // Al limpiar filtro de cliente, reseteamos la lista de cuentas (se repoblará desde movimientos o manual)
     this.accounts.set([]);
-    this.loadMovements();
   }
 
   goToExternalTransfer(): void {
