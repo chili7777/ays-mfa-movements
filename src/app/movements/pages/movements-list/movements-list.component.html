@@ -3,7 +3,12 @@
   <header class="mb-3 mt-3 px-2">
     <div class="d-flex justify-content-between align-items-center">
       <div>
-        <h1 class="h3 mb-1 fw-bold">Transacciones</h1>
+        <div class="d-flex align-items-center gap-2">
+          <h1 class="h3 mb-1 fw-bold">Transacciones</h1>
+          <span class="badge bg-primary bg-opacity-10 text-primary small fw-medium px-2 py-1 rounded-pill" style="font-size: 11px; border: 1px solid rgba(13, 110, 253, 0.2); text-transform: uppercase;">
+            {{ userRole() }}
+          </span>
+        </div>
         <p class="text-secondary small mb-0">Historial de movimientos bancarios</p>
       </div>
       <!-- Desktop Actions -->
